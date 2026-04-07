@@ -405,6 +405,10 @@ nav{
   gap: 0.5rem;
 }
 
+.cell-logo-container{
+  flex-shrink: 0;
+}
+
 .cell-logo{
   height: 100%;
   width: 100%;
@@ -415,11 +419,15 @@ nav{
 
 .cell-name{
   flex-grow: 1;
+  min-width: 0;
 }
 
 .cell-name h3{
   text-transform: capitalize;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell-name-span{
@@ -436,6 +444,7 @@ nav{
   display: flex;
   gap: 0.25rem;
   height: fit-content;
+  flex-shrink: 0;
   border: var(--default-border);
   border-radius: var(--border-radius);
   justify-content: center;

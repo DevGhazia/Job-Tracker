@@ -100,7 +100,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
 
                                 {/* --------- LOGO | NAME -------*/}
                                 <div className="row-top">
-                                    <div>
+                                    <div className="cell-logo-container">
                                         {app.logo?
                                             <img src={app.logo} alt="company's logo" className="cell-logo"/> :
                                             <PiBuildingOfficeDuotone className="cell-logo" style={{padding:"0.35rem"}}/>
