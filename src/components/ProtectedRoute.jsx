@@ -13,7 +13,7 @@ export const ProtectedRoute = ({children}) => {
         return ()=> authStateListner();
     },[]);
 
-    if(user === undefined) return <h2>Authenticatino session...</h2>
+    if(user === undefined) return <h2>Authenticating session...</h2>
     
     return user? <>{children}</> : <Navigate to="/auth/login" replace/> 
 }
