@@ -68,6 +68,12 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         }
     }
 
+    function handleStatusChange(e, id){
+        if(e.target.value === "Interviewing")
+            updateList(id, "didInterview", true);
+        updateList(id, "status", e.target.value)
+    }
+
     if(list.length === 0) return (
         <div className="card" style={{width:"100%", textAlign:"center"}}>
             <p>You haven't added any companies yet</p> 
@@ -142,7 +148,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                                     <select 
                                         className={`basic cell-status status-${app.status.toLowerCase()}`}
                                         value={app.status}
-                                        onChange={(e)=>updateList(app.id, "status", e.target.value)}
+                                        onChange={(e)=>handleStatusChange(e, app.id)}
                                         >
                                         {STATUSES.map((status, index)=> (
                                             <option key={index}>{status}</option>
