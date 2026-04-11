@@ -86,6 +86,26 @@
   --default-border: 1px solid var(--border);
   --defaul-border-muted: 1px solid var(--border-muted);
   --dashed-border: 1px dashed hsl(220 10% 70%);
+
+  --danger: #FEE2E2;
+  --warning: hsl(45 90% 90%);
+  --success: #DCFCE7;
+  --info: #DBEAFE;
+  --no-response: #E2E8F0 ;
+  --interviewing: #FFEDD5;
+
+  --danger-text: #7F1D1D;
+  --warning-text: hsl(45 45% 30%);
+  --success-text: #166534;
+  --info-text: #1E3A8A;
+  --interviewing-text: #78350F;
+  --no-response-text: #334155;
+
+  --danger-accent: #FECACA;
+  --success-accent: #BBF7D0;
+  --interviewing-accent: #FED7AA;
+  --info-accent:  #BFDBFE;
+  --no-response-accent: #D1D5DB;
 }
 
 h1{
@@ -124,7 +144,7 @@ main{
   min-height: 100dvh;
   align-items: center;
   padding: var(--default-padding);
-  background-color: var(--bg-dark);
+  background-color: var(--bg);
 }
 
 nav{
@@ -501,46 +521,50 @@ nav{
 }
 
 .status-applied{
+  border-color: var(--info-accent);
   background-color: var(--info);
   color: var(--info-text);
 }
 
 .status-interviewing{
+  border-color: var(--interviewing-accent);
   background-color: var(--interviewing);
   color: var(--interviewing-text);
 }
 
 .status-accepted{
+  border-color: var(--success-accent);
   background-color: var(--success);
   color: var(--success-text);
 }
 
 .status-rejected{
+  border-color: var(--danger-accent);
   background-color: var(--danger);
   color: var(--danger-text);
 }
 
 .status-no-response{
+  border-color: var(--no-response-accent);
   background-color: var(--no-response);
   color: var(--no-response-text);
 }
 
-.status-applied > *{
-  color: var(--info-text);
+.status-applied > .stats-icon{
+  color: var(--info-accent);
 }
 
-.status-interviewing > *{
-  color: var(--interviewing-text);
-} 
-
-.status-rejected > *{
-  color: var(--danger-text);
+.status-interviewing > .stats-icon{
+  color: var(--interviewing-accent);
 }
 
-.status-no-response > *{
-  color: var(--no-response-text);
+.status-rejected > .stats-icon{
+  color: var(--danger-accent);
 }
 
+.status-no-response > .stats-icon{
+  color: var(--no-response-accent);
+}
 
 .select-preicon{
   position: absolute;
@@ -574,30 +598,30 @@ nav{
 
 .stats > div{
   display: flex;
+  position: relative;
   flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: start;
   flex: 1;
-  /* padding: 0.75rem 0; */
-  min-width: 170px;
-  /* background-color: white; */
-  /* border: var(--default-border); */
-  /* border-radius: var(--border-radius); */
-  border: 1px solid var(--border);
-}
-
-.stats-title{
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-.stats-title:first-child{
-  font-size: 1.25rem;
+  gap: 0.25rem;
+  min-width: 160px;
+  border-width: 1px;
+  border-style: solid;
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius);
 }
 
 .stats div > h1{
-  font-size: 2.5rem;
+  font-size: 3rem;
+}
+
+.stats-icon{
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+.stats-icon:first-child{
+  font-size: 4rem;
 }
 
 @media (min-width: 850px){
