@@ -10,13 +10,15 @@ import { FaBusinessTime } from "react-icons/fa6";
 const ApplicationsTable = ({list, updateList, handleDelete}) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
     const STATUSES = ["Applied", "Interviewing" ,"Accepted", "Rejected", "No-Response"];
-    const timeOutPeriod = 30;
+    const timeOutPeriod = 15;
     
     useEffect(() => {
+        if(!list) return;
         list.forEach(data => {
             const days = getDaysPassed(data.date);
-            if (days > timeOutPeriod && data.status !== "No-Response") {
-                updateList(data.company, "status", "No-Response");
+            if (days > timeOutPeriod && data.status === "Applied") {
+                console.log("this should be working");
+                updateList(data.id, "status", "No-Response");
             }
         });
     }, [list]);
@@ -76,7 +78,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         <section className="list-container">
             <div className="list-heading">
                 <div className="list-heading-text">
-                    <h3>Companies</h3>
+                    <h2>Companies</h2>
                     <p>{`${list.length} ${list.length === 1? "company": "companies"} tracked`}</p>
                 </div>
                 <div className="search-wrapper">

@@ -2,6 +2,7 @@ import AddCompany from "./AddCompany"
 import ApplicationsTable from "./ApplicationsTable"
 import { useEffect, useState } from "react";
 import { addApplication, deleteApplication, listenToApplications, updateApplication } from "../utils_firebase";
+import { Statitics } from "./Statitics";
 
 const Dashboard = () => {
     const [companiesList, setCompaniesList] = useState([]); 
@@ -29,7 +30,8 @@ const Dashboard = () => {
 
     return (
         <section className="hero">
-            <AddCompany addToTable={addToTable} list={companiesList}/>
+            <Statitics list={companiesList}/>
+            {/* <AddCompany addToTable={addToTable} list={companiesList}/> */}
             <ApplicationsTable updateList={updateList} list={companiesList} handleDelete={handleDelete}/>
         </section>
     )

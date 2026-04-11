@@ -96,6 +96,14 @@ h2{
   font: var(--h2);
 }
 
+h3{
+  font: var(--h3);
+}
+
+h4{
+  font: var(--h4);
+}
+
 p{
   font: var(--p);
 }
@@ -418,7 +426,7 @@ nav{
 }
 
 .cell-name{
-  flex-grow: 1;
+  flex-grow: 1; 
   min-width: 0;
 }
 
@@ -517,6 +525,23 @@ nav{
   color: var(--no-response-text);
 }
 
+.status-applied > *{
+  color: var(--info-text);
+}
+
+.status-interviewing > *{
+  color: var(--interviewing-text);
+} 
+
+.status-rejected > *{
+  color: var(--danger-text);
+}
+
+.status-no-response > *{
+  color: var(--no-response-text);
+}
+
+
 .select-preicon{
   position: absolute;
   font-size: 1.25rem;
@@ -528,6 +553,51 @@ nav{
   left: 0.5rem;
   top: 50%;
   transform: translate(0%, -50%);
+}
+
+/* ------STATITICES------- */
+
+.stats-container{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--default-padding);
+}
+  
+.stats{
+  display: flex;
+  justify-content: space-between;
+  overflow: hidden;
+  flex-wrap: wrap;
+  gap: var(--default-padding);
+}
+
+.stats > div{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  /* padding: 0.75rem 0; */
+  min-width: 170px;
+  /* background-color: white; */
+  /* border: var(--default-border); */
+  /* border-radius: var(--border-radius); */
+  border: 1px solid var(--border);
+}
+
+.stats-title{
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.stats-title:first-child{
+  font-size: 1.25rem;
+}
+
+.stats div > h1{
+  font-size: 2.5rem;
 }
 
 @media (min-width: 850px){
