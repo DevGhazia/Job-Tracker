@@ -5,12 +5,31 @@ import { addApplication, deleteApplication, listenToApplications, updateApplicat
 import { Statitics } from "./Statitics";
 
 const Dashboard = () => {
+    const INITIAL_STATS = {"Applied": 0, "Interviewed" : 0, "Rejected": 0, "No-Response" : 0};
     const [companiesList, setCompaniesList] = useState([]); 
+    const [statsList, setStatsList] = useState(INITIAL_STATS);
 
     useEffect(() => {
         const unsubscribe = listenToApplications(setCompaniesList);
         return () => unsubscribe && unsubscribe();
     }, []);
+
+    useEffect(()=>{
+        if(companiesList.length ===0) return;
+        setStatsList(INITIAL_STATS);
+        companiesList.map((comp)=>{
+            if(comp.didInterview) setStatsList(prev=> ({...prev, "Interviewed" : prev["Interviewed"] + 1}));
+            setStatusStats(comp.status);
+        })
+    }, [companiesList]);
+
+    function setStatusStats(status){
+        if(status === "Interviewing" || status === "accepted") return;
+        switch(status){
+            case "Applied" : setStatsList(prev=> ({...prev, "Applied": companiesList.length})); break;
+            default : setStatsList(prev=> ({...prev, [status] : prev[status] + 1})); break;
+        }
+    }
 
     async function addToTable(formData){
         try {
@@ -30,8 +49,8 @@ const Dashboard = () => {
 
     return (
         <section className="hero">
-            <Statitics list={companiesList}/>
-            {/* <AddCompany addToTable={addToTable} list={companiesList}/> */}
+            <Statitics list={companiesList} stats={statsList}/>
+            <AddCompany addToTable={addToTable} list={companiesList}/>
             <ApplicationsTable updateList={updateList} list={companiesList} handleDelete={handleDelete}/>
         </section>
     )

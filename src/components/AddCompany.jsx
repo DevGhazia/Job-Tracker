@@ -15,7 +15,8 @@ export default function AddCompany({list, addToTable}){
         role: ROLES[0],
         experience: 1,
         location: "",
-        timeElapsed: 0 
+        timeElapsed: 0,
+        didInterview: false,
     }
 
     const [companies, setCompanies] = useState([]);
@@ -85,6 +86,11 @@ export default function AddCompany({list, addToTable}){
     function handleFormChange(e){
         const {name, value} = e.target;
         setForm(prev=> ({...prev, [name]: value}));
+    }
+
+    function handleStatusChange(e){
+        if(e.target.value === "Interviewing") setFormField("didInterview", true); 
+        handleFormChange(e);
     }
     
     function setFormField(name, value){
@@ -160,7 +166,7 @@ export default function AddCompany({list, addToTable}){
                     id="status" 
                     className="basic" 
                     value={form.status}
-                    onChange={handleFormChange}
+                    onChange={handleStatusChange}
                 >
                     {STATUSES.map((status, index)=>(
                         <option value={status} key={index}>{status}</option>
