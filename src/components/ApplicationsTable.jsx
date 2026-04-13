@@ -38,17 +38,16 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         return totalDays;
     }
 
-    function getTimeElapsed(data){
+    function getTimeElapsed(data, type){
         const days = getDaysPassed(data.date);
         const months = Math.floor(days/30);
         const years = Math.floor(months/12);
         let timeString = "";
-        if(years) return `${years} ${years === 1? "year" : "years"} ago`; 
-        if(months) return `${months} ${months === 1? "month" : "months"} ago`
+        if(years) return `${years}${type==="long"? (years===1? " year ago": " years ago") : "y"} `; 
+        if(months) return `${months}${type==="long"? (months===1? " month ago": " months ago") : "m"}`
         switch(days){
             case 0: timeString = "Today"; break; 
-            case 1: timeString = "Yesterday"; break;
-            default: timeString = `${days} days ago`;break;
+            default: timeString = `${days}${type==="long"? (days===1? " day ago": " days ago") : "d"}`;break;
         }
         return timeString;
     }
@@ -93,7 +92,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                     </div>
                     <input type="text" className="basic" id="searchbar" placeholder="Search company"/>
                 </div>
-            </div>
+                </div>
 
             <div className="table">
                 <div className="table-header">
@@ -120,7 +119,8 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                                     </div>
                                     <div className="tag-container">
                                         <GoClockFill className="tag-icon" />
-                                        <span>{getTimeElapsed(app)}</span>
+                                        <span className="time-short">{getTimeElapsed(app, "short")}</span>
+                                        <span className="time-long">{getTimeElapsed(app, "long")}</span>
                                     </div>
                                 </div>
 

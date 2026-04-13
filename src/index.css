@@ -168,6 +168,10 @@ nav{
   font: var(--p);
 }
 
+.footer{
+  height: 3rem;
+}
+
 .hero{
   display: flex;
   width: 100%;
@@ -376,30 +380,6 @@ nav{
   font-size: 0.9rem;
 }
 
-@media (min-width: 600px){
-  :root{
-    --default-padding: 1rem;
-  }
-
-  .form{
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-areas: 
-    "item1 item1 item1" 
-    "item2 item3 item4"
-    "item5 item6 item7";
-  }
-
-  .list-heading{
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: end;
-  }
-
-  .list-heading-text{
-    flex-direction: column;
-  }
-}
-
 .company-secondary{
   display: flex;
   gap: 0.5rem;
@@ -491,6 +471,14 @@ nav{
   color: var(--text-muted);
 }
 
+.time-short{
+  display: inline;
+}
+
+.time-long{
+  display: none;
+}
+
 .row-bottom{
   display: flex;
   gap: 0.5rem;
@@ -502,6 +490,11 @@ nav{
   border: var(--default-border);
   background-color: transparent;
   border-radius: var(--border-radius);
+  transition: transform 0.2s;
+}
+
+.delete-button:hover{
+  transform: scale(1.05);
 }
 
 .delete-svg{
@@ -622,6 +615,56 @@ nav{
 
 .stats-icon:first-child{
   font-size: 4rem;
+}
+
+.fab-button{
+  position: fixed;
+  bottom: var(--default-padding);
+  right: var(--default-padding);
+  background-color: var(--button);
+  color: var(--button-text);
+  padding: 1rem;
+  border: none;
+  border-radius: 100%;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s;
+}
+
+.fab-button:hover{
+  background-color: var(--button-hover);
+  transform: scale(1.05);
+}
+
+@media (min-width: 600px){
+  :root{
+    --default-padding: 1rem;
+  }
+
+  .form{
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-areas: 
+    "item1 item1 item1" 
+    "item2 item3 item4"
+    "item5 item6 item7";
+  }
+
+  .list-heading{
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: end;
+  }
+
+  .list-heading-text{
+    flex-direction: column;
+  }
+
+  .time-short{
+    display: none;
+  }
+
+  .time-long{
+    display: inline;
+  }
 }
 
 @media (min-width: 850px){

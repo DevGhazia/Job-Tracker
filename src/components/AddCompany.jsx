@@ -4,6 +4,7 @@ import { PiBuildingOfficeDuotone } from "react-icons/pi";
 
 export default function AddCompany({list, addToTable}){
     const TODAY = new Date().toISOString().split("T")[0];
+    const FETCH_API = "https://api.clearout.io/public/companies/autocomplete?query=";
     const ROLES = ["Software Engineer-1", "Software Engineer-2", "Software Enginner-3"];
     const STATUSES = [ "Applied", "Interviewing", "Accepted", "Rejected"]
     const LOCATIONS = ["Bangalore", "Remote", "Gurgoan", "Noida", "Delhi", "Pune", "Hyderabad"];
@@ -14,7 +15,7 @@ export default function AddCompany({list, addToTable}){
         status: STATUSES[0],
         role: ROLES[0],
         experience: 1,
-        location: "",
+        location: LOCATIONS[0],
         timeElapsed: 0,
         didInterview: false,
     }
@@ -44,7 +45,7 @@ export default function AddCompany({list, addToTable}){
     }, [highlightIndex]);
 
     const  fetchData = async() => {
-        const data = await fetch(`https://api.clearout.io/public/companies/autocomplete?query=${form.company}`);
+        const data = await fetch(`${FETCH_API}${form.company}`);
         const result = await data.json();
         setCompanies(result.data);
         setHighlightIndex(-1);
@@ -79,18 +80,14 @@ export default function AddCompany({list, addToTable}){
             setForm(initialForm);
                 return;
         } 
-        addToTable(form);
+        const updatedForm = {...form, didInterview: form.status==="Interviewing"? true: false};
+        addToTable(updatedForm);
         setForm(initialForm);
     }
 
     function handleFormChange(e){
         const {name, value} = e.target;
         setForm(prev=> ({...prev, [name]: value}));
-    }
-
-    function handleStatusChange(e){
-        if(e.target.value === "Interviewing") setFormField("didInterview", true); 
-        handleFormChange(e);
     }
     
     function setFormField(name, value){
@@ -103,6 +100,12 @@ export default function AddCompany({list, addToTable}){
         setFormField("logo", null);
     }
 
+    function handleKeyDown(e){
+        if(e.key==='Enter'){
+            e.preventDefault();
+        }
+    }
+
     function getDaysPassed(date){
         const target = new Date(date);
         const today = new Date();
@@ -113,7 +116,7 @@ export default function AddCompany({list, addToTable}){
     }
 
     return(
-        <form className="form card" onSubmit={(e)=>e.preventDefault()}>
+        <form className="form card" onSubmit={(e)=>e.preventDefault()} onKeyDown={handleKeyDown}>
 
             {/* ------ SEARCH BAR ------- */}
             <div className="search-container item1">
@@ -166,7 +169,7 @@ export default function AddCompany({list, addToTable}){
                     id="status" 
                     className="basic" 
                     value={form.status}
-                    onChange={handleStatusChange}
+                    onChange={handleFormChange}
                 >
                     {STATUSES.map((status, index)=>(
                         <option value={status} key={index}>{status}</option>
