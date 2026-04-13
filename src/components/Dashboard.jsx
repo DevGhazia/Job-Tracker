@@ -3,6 +3,8 @@ import ApplicationsTable from "./ApplicationsTable"
 import { useEffect, useState } from "react";
 import { addApplication, deleteApplication, listenToApplications, updateApplication } from "../utils_firebase";
 import { Statitics } from "./Statitics";
+import { TiPlus } from "react-icons/ti";
+import { FaPlus } from "react-icons/fa6";
 
 const Dashboard = () => {
     const INITIAL_STATS = {"Applied": 0, "Interviewed" : 0, "Rejected": 0, "No-Response" : 0};
@@ -52,6 +54,9 @@ const Dashboard = () => {
             <Statitics list={companiesList} stats={statsList}/>
             <AddCompany addToTable={addToTable} list={companiesList}/>
             <ApplicationsTable updateList={updateList} list={companiesList} handleDelete={handleDelete}/>
+            <button className="fab-button">
+                <FaPlus className="fab-button-icon" fontSize={35}/>
+            </button>
         </section>
     )
 }

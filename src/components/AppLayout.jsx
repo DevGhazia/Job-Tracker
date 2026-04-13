@@ -15,6 +15,7 @@ export const AppLayout = () => {
                 <button onClick={()=>signOut(auth)} className='nav-logout'>Logout</button>
             </nav>
             <Outlet />
+            <div className="footer"></div>
         </main>
     )
 }
