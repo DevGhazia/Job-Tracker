@@ -16,7 +16,6 @@ export default function AddCompany({list, addToTable}){
         role: ROLES[0],
         experience: 1,
         location: LOCATIONS[0],
-        timeElapsed: 0,
         didInterview: false,
     }
 
@@ -49,6 +48,7 @@ export default function AddCompany({list, addToTable}){
         const result = await data.json();
         setCompanies(result.data);
         setHighlightIndex(-1);
+        setError("");
     };
 
     function onSuggestionClick(comp){
@@ -104,15 +104,6 @@ export default function AddCompany({list, addToTable}){
         if(e.key==='Enter'){
             e.preventDefault();
         }
-    }
-
-    function getDaysPassed(date){
-        const target = new Date(date);
-        const today = new Date();
-        const difference = today.getTime() - target.getTime();
-        const oneDay = 1000 * 60 * 60 * 24;
-        const totalDays = Math.floor(difference/ oneDay);   
-        return totalDays;
     }
 
     return(

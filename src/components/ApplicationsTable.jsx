@@ -10,6 +10,7 @@ import { FaBusinessTime } from "react-icons/fa6";
 const ApplicationsTable = ({list, updateList, handleDelete}) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
     const STATUSES = ["Applied", "Interviewing" ,"Accepted", "Rejected", "No-Response"];
+    const [sortMethod , setSortedMethod] = useState("time");
     const timeOutPeriod = 15;
     
     useEffect(() => {
@@ -26,7 +27,8 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
     function formateDate(date){
         const [year, month, day] = date.split("-");
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return `${day} ${months[Number(month) + 1]}, ${year.slice(2)}`
+        console.log(date);
+        return `${day} ${months[Number(month) - 1]}, ${year.slice(2)}`
     }
 
     function getDaysPassed(date){
@@ -38,8 +40,8 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         return totalDays;
     }
 
-    function getTimeElapsed(data, type){
-        const days = getDaysPassed(data.date);
+    function getTimeElapsed(date, type){
+        const days = getDaysPassed(date);
         const months = Math.floor(days/30);
         const years = Math.floor(months/12);
         let timeString = "";
@@ -73,6 +75,15 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         updateList(id, "status", e.target.value)
     }
 
+    function getSortedlist(){
+        return list.toSorted((a,b)=>{
+            switch(sortMethod){
+                case "time": return new Date(b.date).getTime() - new Date(a.date).getTime(); 
+                default: return 0;
+            }
+        })
+    }
+
     if(list.length === 0) return (
         <div className="card" style={{width:"100%", textAlign:"center"}}>
             <p>You haven't added any companies yet</p> 
@@ -102,7 +113,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                 </div>
 
                 <div className="table-body">
-                    {list.map((app, index)=>(
+                    {getSortedlist().map((app, index)=>(
                         <div className="table-row card" key={index}>
 
                                 {/* --------- LOGO | NAME -------*/}
@@ -119,8 +130,8 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                                     </div>
                                     <div className="tag-container">
                                         <GoClockFill className="tag-icon" />
-                                        <span className="time-short">{getTimeElapsed(app, "short")}</span>
-                                        <span className="time-long">{getTimeElapsed(app, "long")}</span>
+                                        <span className="time-short">{getTimeElapsed(app.date, "short")}</span>
+                                        <span className="time-long">{getTimeElapsed(app.date, "long")}</span>
                                     </div>
                                 </div>
 
