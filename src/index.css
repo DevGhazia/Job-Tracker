@@ -623,7 +623,8 @@ nav{
   right: var(--default-padding);
   background-color: var(--button);
   color: var(--button-text);
-  padding: 1rem;
+  height: 4rem;
+  aspect-ratio: 1/1;
   border: none;
   border-radius: 100%;
   box-shadow: var(--shadow);
