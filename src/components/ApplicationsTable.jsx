@@ -11,7 +11,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
     const STATUSES = ["Applied", "Interviewing" ,"Accepted", "Rejected", "No-Response"];
     const [sortMethod , setSortedMethod] = useState("time");
-    const timeOutPeriod = 15;
+    const timeOutPeriod = 14;
     
     useEffect(() => {
         if(!list) return;
@@ -27,7 +27,6 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
     function formateDate(date){
         const [year, month, day] = date.split("-");
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        console.log(date);
         return `${day} ${months[Number(month) - 1]}, ${year.slice(2)}`
     }
 

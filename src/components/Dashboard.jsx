@@ -18,11 +18,18 @@ const Dashboard = () => {
 
     useEffect(()=>{
         if(companiesList.length ===0) return;
-        setStatsList(INITIAL_STATS);
-        companiesList.map((comp)=>{
-            if(comp.didInterview) setStatsList(prev=> ({...prev, "Interviewed" : prev["Interviewed"] + 1}));
-            setStatusStats(comp.status);
-        })
+        const statsUpdate = companiesList.reduce((acc, comp)=>{
+            if(comp.didInterview) 
+                acc["Interviewed"] = acc["Interviewed"] + 1;
+            if(comp.status != "Interviewing" && comp.status != "Accepted"){
+                if(comp.status === "Applied") acc["Applied"] = companiesList.length;
+                else{
+                    acc[comp.status] = acc[comp.status] + 1;
+                }
+            }
+            return acc;
+        }, INITIAL_STATS);
+        setStatsList(prev=> ({...prev, ...statsUpdate}));
     }, [companiesList]);
 
     function setStatusStats(status){
