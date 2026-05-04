@@ -158,6 +158,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                                     <select 
                                         className={`basic cell-status status-${app.status.toLowerCase()}`}
                                         value={app.status}
+                                        name="status"
                                         onChange={(e)=>handleStatusChange(e, app.id)}
                                         >
                                         {STATUSES.map((status, index)=> (

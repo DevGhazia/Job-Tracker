@@ -483,9 +483,11 @@ nav{
   display: flex;
   gap: 0.5rem;
   position: relative;
+  align-items: center;
 }
 
 .delete-button{
+  height: 100%;
   aspect-ratio: 1/1;
   border: var(--default-border);
   background-color: transparent;
@@ -510,7 +512,8 @@ nav{
   text-transform: uppercase;
   font-weight: 500;
   color: hsl(210 40% 30%);
-  padding-left: 28px;
+  padding-left: 1.75rem;
+  padding-right: 1rem;
 }
 
 .status-applied{
@@ -562,7 +565,7 @@ nav{
 .select-preicon{
   position: absolute;
   font-size: 1.25rem;
-  height: 20px;
+  height: 1.25px;
   aspect-ratio: 1/1;
   display: flex;
   justify-content: center;
@@ -668,7 +671,7 @@ nav{
   }
 }
 
-@media (min-width: 850px){
+@media (min-width: 1000px){
   .form{
     /* max-width: 1024px; */
     grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -679,5 +682,35 @@ nav{
 
   tr > *{
     display: table-cell;
+  }
+
+  .table-body{
+    gap: 0;
+    border: var(--default-border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+  }
+
+  .table-row{
+    grid-template-columns: 1fr 1fr auto;  
+    grid-template-rows: calc(1.2*var(--input-height));  
+    padding: 0.75rem;
+    gap: 0.5rem;
+    align-items: center;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .cell-logo-container{
+    height: 3rem;
+  }
+
+  .row-top{
+    align-items: center;
+  }
+
+  .delete-button{
+    max-width: var(--input-height);
+    width: 100%;
   }
 }
