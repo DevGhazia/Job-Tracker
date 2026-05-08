@@ -11,6 +11,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
     const STATUSES = ["Applied", "Interviewing" ,"Accepted", "Rejected", "No-Response"];
     const [sortMethod , setSortedMethod] = useState("time");
+    const [searchTerm, setSearchTerm] = useState("");
     const timeOutPeriod = 14;
     
     useEffect(() => {
@@ -75,7 +76,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
     }
 
     function getSortedlist(){
-        return list.toSorted((a,b)=>{
+        return filteredList.toSorted((a,b)=>{
             switch(sortMethod){
                 case "time": return new Date(b.date).getTime() - new Date(a.date).getTime(); 
                 default: return 0;
@@ -89,18 +90,27 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         </div>
     )    
 
+    const filteredList = list.filter((comp)=> comp.company.toLowerCase().includes(searchTerm.toLowerCase()));
+
     return (
         <section className="list-container">
             <div className="list-heading">
                 <div className="list-heading-text">
                     <h2>Companies</h2>
-                    <p>{`${list.length} ${list.length === 1? "company": "companies"} tracked`}</p>
+                    <p>{`${filteredList.length} ${filteredList.length === 1? "company": "companies"} tracked`}</p>
                 </div>
                 <div className="search-wrapper">
                     <div className="search-icon-wrapper">
                         <CiSearch className="search-icon"/>
                     </div>
-                    <input type="text" className="basic" id="searchbar" placeholder="Search company"/>
+                    <input 
+                        type="text" 
+                        className="basic" 
+                        id="searchbar" 
+                        placeholder="Search company"
+                        value={searchTerm}
+                        onChange={(e)=>setSearchTerm(e.target.value)}
+                    />
                 </div>
                 </div>
 
