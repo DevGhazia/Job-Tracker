@@ -436,7 +436,6 @@ nav{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
 }
 
 .cell-name-span{
@@ -704,6 +703,10 @@ nav{
 
   .cell-logo-container{
     height: 3rem;
+  }
+
+  .cell-name h3{
+    max-width: 200px;
   }
 
   .row-top{

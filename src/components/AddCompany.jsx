@@ -1,28 +1,41 @@
 import { useEffect, useState } from "react";
 import { CiSearch } from "react-icons/ci";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
+import { ROLES, LOCATIONS, STATUSES} from "../constants";
 
 export default function AddCompany({list, addToTable}){
-    const TODAY = new Date().toISOString().split("T")[0];
-    const FETCH_API = "https://api.clearout.io/public/companies/autocomplete?query=";
-    const ROLES = ["Software Engineer-1", "Software Engineer-2", "Software Enginner-3"];
-    const STATUSES = [ "Applied", "Interviewing", "Accepted", "Rejected"]
-    const LOCATIONS = ["Bangalore", "Remote", "Gurgoan", "Noida", "Delhi", "Pune", "Hyderabad"];
+    const FETCH_API = import.meta.env.VITE_API_BASE_URL;
+    const getToday = ()=> new Date().toLocaleDateString('en-CA');
+    const [today, setToday] = useState(getToday());
     const initialForm = {
         logo: null,
         company: "",
-        date: TODAY,
-        status: STATUSES[0],
-        role: ROLES[0],
+        date: getToday(),
+        status: STATUSES.APPLIED,
+        role: ROLES.SDE1,
         experience: 1,
-        location: LOCATIONS[0],
+        location: LOCATIONS.BANGALORE,
         didInterview: false,
     }
-
     const [companies, setCompanies] = useState([]);
     const [isTyping, setIsTyping] = useState(true);
     const [highlightIndex, setHighlightIndex] = useState(-1);
     const [form, setForm] = useState(initialForm);
+
+    //UPDATE DATE ON TAB FOCUS
+    // useEffect(()=>{
+    //     console.log("this is a listerner");
+    //     const updateDateOnFocus = ()=>{
+    //         if(document.visibilityState === "visible"){
+    //             console.log("now changing");
+    //             const now = new Date().toLocaleDateString('en-CA');
+    //             setToday(now);
+    //             setFormField("date", now);
+    //         }
+    //     }
+    //     document.addEventListener("visibilitychange", updateDateOnFocus);
+    //     return ()=> document.removeEventListener("visibilitychange", updateDateOnFocus);
+    // },[]);
 
     // SEARCH WITH DELAY
     useEffect(()=>{
@@ -39,8 +52,11 @@ export default function AddCompany({list, addToTable}){
             return;
         const highlightedComp = companies[highlightIndex]; 
         setIsTyping(false);
-        setFormField("company", highlightedComp.name);
-        setFormField("logo", highlightedComp.logo_url);
+        setForm((prev)=>({
+            ...prev, 
+            company: highlightedComp.name, 
+            logo: highlightedComp.logo_url
+        }));
     }, [highlightIndex]);
 
     const  fetchData = async() => {
@@ -48,13 +64,15 @@ export default function AddCompany({list, addToTable}){
         const result = await data.json();
         setCompanies(result.data);
         setHighlightIndex(-1);
-        setError("");
     };
 
     function onSuggestionClick(comp){
         setIsTyping(false);
-        setFormField("company", comp.name);
-        setFormField("logo", comp.logo_url);
+        setForm((prev)=> ({
+            ...prev, 
+            company: comp.name, 
+            logo: comp.logo_url
+        }));
         setCompanies([]);
     }
 
@@ -74,8 +92,8 @@ export default function AddCompany({list, addToTable}){
     }
 
     function handleAdd(){
-        const exits = list.some((item)=>item.company === form.company);
-        if(exits){
+        const exists = list.some((item)=>item.company === form.company);
+        if(exists){
             console.log("already added");
             setForm(initialForm);
                 return;
@@ -162,8 +180,8 @@ export default function AddCompany({list, addToTable}){
                     value={form.status}
                     onChange={handleFormChange}
                 >
-                    {STATUSES.map((status, index)=>(
-                        <option value={status} key={index}>{status}</option>
+                    {Object.entries(STATUSES).map(([key, value])=>(
+                        <option value={value} key={key}>{value}</option>
                     ))}
                 </select>
             </div>
@@ -178,8 +196,8 @@ export default function AddCompany({list, addToTable}){
                     value={form.role}
                     onChange={handleFormChange}
                 >
-                    {ROLES.map((role, index)=>(
-                        <option key={index} value={role}>{role}</option>
+                    {Object.entries(ROLES).map(([key, value])=>(
+                        <option key={key} value={value}>{value}</option>
                     ))}
                 </select>
             </div>
@@ -195,17 +213,17 @@ export default function AddCompany({list, addToTable}){
                         disabled={form.experience === 0}
                     >-</button>
                     <input 
-                        type="text" 
+                        type="number" 
                         id="experience"
                         name="experience"
                         className="basic"
                         value={form.experience}
                         onChange={handleFormChange}
                     />
-                    <button 
-                        onClick={()=>setForm(prev => ({...prev, experience: Number(prev.experience) + 1}))}
-                        type="button"
-                    >+</button>
+                        <button 
+                            onClick={()=>setForm(prev => ({...prev, experience: Number(prev.experience) + 1}))}
+                            type="button"
+                        >+</button>
                 </div>
             </div>
 
@@ -219,8 +237,8 @@ export default function AddCompany({list, addToTable}){
                     value={form.location}
                     onChange={handleFormChange}
                 >
-                    {LOCATIONS.map((location, index)=>(
-                        <option key={index} value={location}>{location}</option>
+                    {Object.entries(LOCATIONS).map(([key, value])=>(
+                        <option key={key} value={value}>{value}</option>
                     ))}
                 </select>
             </div>
@@ -234,7 +252,7 @@ export default function AddCompany({list, addToTable}){
                     name="date"
                     className="basic"
                     value={form.date}
-                    max={TODAY}
+                    max={today}
                     onChange={handleFormChange}
                 />
             </div>
