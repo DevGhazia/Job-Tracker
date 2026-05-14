@@ -19,7 +19,6 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         list.forEach(data => {
             const days = getDaysPassed(data.date);
             if (days > timeOutPeriod && data.status === "Applied") {
-                console.log("this should be working");
                 updateList(data.id, "status", "No-Response");
             }
         });

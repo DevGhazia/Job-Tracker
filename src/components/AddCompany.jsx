@@ -5,7 +5,7 @@ import { ROLES, LOCATIONS, STATUSES} from "../constants";
 
 export default function AddCompany({list, addToTable}){
     const FETCH_API = import.meta.env.VITE_API_BASE_URL;
-    const getToday = ()=> new Date().toLocaleDateString('en-CA');
+    const getToday = ()=> new Date().toISOString().split("T")[0];
     const [today, setToday] = useState(getToday());
     const initialForm = {
         logo: null,
