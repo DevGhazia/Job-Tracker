@@ -656,6 +656,7 @@ nav{
   justify-content: space-between;
   margin: 0.25rem;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
 .graph-stats-container *{
