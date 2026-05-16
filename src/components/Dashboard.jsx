@@ -5,6 +5,7 @@ import { addApplication, deleteApplication, listenToApplications, updateApplicat
 import { Statitics } from "./Statitics";
 import { TiPlus } from "react-icons/ti";
 import { FaPlus } from "react-icons/fa6";
+import HeatGraph from "./HeatGraph";
 
 const Dashboard = () => {
     const INITIAL_STATS = {"Applied": 0, "Interviewed" : 0, "Rejected": 0, "No-Response" : 0};
@@ -56,11 +57,18 @@ const Dashboard = () => {
         deleteApplication(id);
     }
 
+    function getSortedList(){
+        return companiesList.toSorted((a,b)=>{
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+        })
+    }
+
     return (
         <section className="hero">
             <Statitics list={companiesList} stats={statsList}/>
+            <HeatGraph list={getSortedList()}/>
             <AddCompany addToTable={addToTable} list={companiesList}/>
-            <ApplicationsTable updateList={updateList} list={companiesList} handleDelete={handleDelete}/>
+            <ApplicationsTable updateList={updateList} list={getSortedList()} handleDelete={handleDelete}/>
             <button className="fab-button">
                 <FaPlus className="fab-button-icon" fontSize={35}/>
             </button>

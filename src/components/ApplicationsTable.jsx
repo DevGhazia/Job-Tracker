@@ -6,38 +6,21 @@ import { GoClockFill, GoLocation } from "react-icons/go";
 import { HiLocationMarker } from "react-icons/hi";
 import { BiSolidMessageSquareCheck, BiSolidMessageSquareDots, BiSolidMessageSquareEdit, BiSolidMessageSquareError, BiSolidMessageSquareX } from "react-icons/bi";
 import { FaBusinessTime } from "react-icons/fa6";
+import { formateDate, getDaysPassed, getMonthName, STATUSES, TIMEOUT_PERIOD } from "../constants";
 
 const ApplicationsTable = ({list, updateList, handleDelete}) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
-    const STATUSES = ["Applied", "Interviewing" ,"Accepted", "Rejected", "No-Response"];
-    const [sortMethod , setSortedMethod] = useState("time");
     const [searchTerm, setSearchTerm] = useState("");
-    const timeOutPeriod = 14;
     
     useEffect(() => {
         if(!list) return;
         list.forEach(data => {
             const days = getDaysPassed(data.date);
-            if (days > timeOutPeriod && data.status === "Applied") {
+            if (days > TIMEOUT_PERIOD && data.status === STATUSES.APPLIED) {
                 updateList(data.id, "status", "No-Response");
             }
         });
     }, [list]);
-
-    function formateDate(date){
-        const [year, month, day] = date.split("-");
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return `${day} ${months[Number(month) - 1]}, ${year.slice(2)}`
-    }
-
-    function getDaysPassed(date){
-        const target = new Date(date);
-        const today = new Date();
-        const difference = today.getTime() - target.getTime();
-        const oneDay = 1000 * 60 * 60 * 24;
-        const totalDays = Math.floor(difference/ oneDay);   
-        return totalDays;
-    }
 
     function getTimeElapsed(date, type){
         const days = getDaysPassed(date);
@@ -60,11 +43,11 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
 
     function getStatusIcon(status){
         switch(status){
-            case "Applied": return <BiSolidMessageSquareEdit />; break;
-            case "Interviewing": return <BiSolidMessageSquareDots />; break;
-            case "Accepted": return <BiSolidMessageSquareCheck />; break;
-            case "Rejected": return <BiSolidMessageSquareX />; break;
-            case "No-Response": return <BiSolidMessageSquareError />; break;
+            case STATUSES.APPLIED: return <BiSolidMessageSquareEdit />; break;
+            case STATUSES.INTERVIEWING: return <BiSolidMessageSquareDots />; break;
+            case STATUSES.ACCEPTED: return <BiSolidMessageSquareCheck />; break;
+            case STATUSES.REJECTED: return <BiSolidMessageSquareX />; break;
+            case STATUSES.NORESPONSE: return <BiSolidMessageSquareError />; break;
         }
     }
 
@@ -72,15 +55,6 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
         if(e.target.value === "Interviewing")
             updateList(id, "didInterview", true);
         updateList(id, "status", e.target.value)
-    }
-
-    function getSortedlist(){
-        return filteredList.toSorted((a,b)=>{
-            switch(sortMethod){
-                case "time": return new Date(b.date).getTime() - new Date(a.date).getTime(); 
-                default: return 0;
-            }
-        })
     }
 
     if(list.length === 0) return (
@@ -121,7 +95,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                 </div>
 
                 <div className="table-body">
-                    {getSortedlist().map((app, index)=>(
+                    {list.map((app, index)=>(
                         <div className="table-row card" key={index}>
 
                                 {/* --------- LOGO | NAME -------*/}
@@ -170,8 +144,8 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                                         name="status"
                                         onChange={(e)=>handleStatusChange(e, app.id)}
                                         >
-                                        {STATUSES.map((status, index)=> (
-                                            <option key={index}>{status}</option>
+                                        {Object.entries(STATUSES).map(([key, value])=> (
+                                            <option key={key}>{value}</option>
                                         ))}
                                     </select>
                                     <button className="delete-button" onClick={()=>handleDelete(app.id)}>

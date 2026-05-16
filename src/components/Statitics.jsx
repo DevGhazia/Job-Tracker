@@ -13,7 +13,10 @@ export const Statitics = ({list, stats}) => {
 
     return (
         <div className="stats-container">
-            <h2>Statitics</h2>
+            <div>
+                <h2>Statitics</h2>
+                <small>Visual overview of your active job search stages</small>
+            </div>
             <div className="stats">
                 {Object.entries(stats).map(([title, value], index)=>{
                     const status = title === "Interviewed"? "Interviewing" : title;

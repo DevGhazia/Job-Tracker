@@ -24,11 +24,10 @@ export default function AddCompany({list, addToTable}){
 
     //UPDATE DATE ON TAB FOCUS
     // useEffect(()=>{
-    //     console.log("this is a listerner");
     //     const updateDateOnFocus = ()=>{
     //         if(document.visibilityState === "visible"){
     //             console.log("now changing");
-    //             const now = new Date().toLocaleDateString('en-CA');
+    //             const now = getToday(); 
     //             setToday(now);
     //             setFormField("date", now);
     //         }
