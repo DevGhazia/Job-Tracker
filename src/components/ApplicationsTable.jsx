@@ -95,7 +95,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                 </div>
 
                 <div className="table-body">
-                    {list.map((app, index)=>(
+                    {filteredList.map((app, index)=>(
                         <div className="table-row card" key={index}>
 
                                 {/* --------- LOGO | NAME -------*/}

@@ -378,6 +378,7 @@ nav{
 
 .cell-logo-container{
   flex-shrink: 0;
+  height: 3rem;
 }
 
 .cell-logo{
@@ -456,6 +457,8 @@ nav{
   background-color: transparent;
   border-radius: var(--border-radius);
   transition: transform 0.2s;
+  max-width: var(--input-height);
+  width: 100%;
 }
 
 .delete-button:hover{
@@ -697,6 +700,20 @@ nav{
     align-items: end;
   }
 
+  .table-row{
+    grid-template-columns: 1fr auto; 
+    grid-template-rows: repeat(calc(1.2*var(--input-height)), 2);  
+    padding: 0.75rem;
+    gap: 0.5rem;
+    align-items: center;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  
+  .row-top{
+    grid-column: span 2;
+  }
+
   .list-heading-text{
     flex-direction: column;
   }
@@ -744,8 +761,8 @@ nav{
     border-radius: 0;
   }
 
-  .cell-logo-container{
-    height: 3rem;
+  .row-top{
+    grid-column: span 1;
   }
 
   .cell-name h3{
@@ -756,8 +773,4 @@ nav{
     align-items: center;
   }
 
-  .delete-button{
-    max-width: var(--input-height);
-    width: 100%;
-  }
 }
