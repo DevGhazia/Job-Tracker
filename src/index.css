@@ -660,11 +660,7 @@ nav{
   margin: 0.25rem;
   flex-direction: column;
   gap: 0.25rem;
-}
-
-.graph-stats-container *{
-  font: var(--small);
-}
+} 
 
 .stats-card{
   padding: 0.25rem 0.5rem;
@@ -673,10 +669,14 @@ nav{
   width: fit-content;
 }
 
-
 .graph-subtext-wrapper{
   display: flex;
   justify-content: space-between;
+}
+
+.inactive{
+  filter: grayscale(100%);
+  opacity: 0.6;
 }
 
 /* ============ MEDIA =============== */

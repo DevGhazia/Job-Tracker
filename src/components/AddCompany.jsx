@@ -265,6 +265,7 @@ export default function AddCompany({list, addToTable}){
                     type="submit" 
                     id="add"
                     onClick={handleAdd}
+                    disabled={!form.company.trim()}
                 >Add Company</button>
             </div>
         </form>

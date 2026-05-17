@@ -79,6 +79,10 @@ export default function HeatGraph({ list }) {
         return streak;
     }
 
+    function checkTodayStreakStatus(){
+        return result[result.length - 1].count;
+    }
+
     const streakCount = calculateStreak();
 
     if(!list.length) return;
@@ -92,11 +96,15 @@ export default function HeatGraph({ list }) {
             <div className="card graph-container">
                 <div className="graph-stats-container">
                     <div>
-                        <span>🔥 Current streak : </span>
-                        <span>{`${streakCount} ${streakCount === 1? "day" : "days"}`}</span>
+                        <big className={checkTodayStreakStatus()? "": "inactive"}>🔥 </big>
+                        <span>Current streak : 
+                            {` ${streakCount} ${streakCount === 1? "day" : "days"}`}
+                        </span>
                     </div>
                     <div>
-                        <p>{`⚡ Peak acitivity : 
+                        <p>
+                            <big>⚡</big>
+                            {` Peak acitivity : 
                             ${maxCount} ${maxCount > 0? "applications" : "job"} 
                             (${formateDate(peakDayDate)})`}
                         </p>
