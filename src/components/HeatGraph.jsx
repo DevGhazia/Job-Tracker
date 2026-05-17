@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 
 export default function HeatGraph({ list }) {
 
-    // List not populated -> return
-
     const [width, setWidth] = useState(window.innerWidth);
 
     useEffect(()=>{
@@ -32,9 +30,9 @@ export default function HeatGraph({ list }) {
     }
 
     function generateGraphData() {
-        const today = new Date();
         const result = [];
         const counts = {};
+        const today = new Date();
         let peakDayDate = "";
         let maxCount = 0;
 
@@ -52,8 +50,10 @@ export default function HeatGraph({ list }) {
             const dateStr = rollingDate.toISOString().split('T')[0];
             const count = counts[dateStr] || 0;
             result.push({
+                date: new Date(rollingDate),
                 tooltip: `${rollingDate.getDate()} ${getMonthName(rollingDate)}, Applied: ${count}`,
                 color: getLevel(count), 
+                count: count
             });
             rollingDate.setDate(rollingDate.getDate() + 1);
         }
@@ -61,6 +61,25 @@ export default function HeatGraph({ list }) {
     }
 
     const {result, maxCount, peakDayDate} = generateGraphData();
+
+    function calculateStreak(){
+        if(!result.length) return 0;
+
+        let streak = 0;
+        let index = result.length - 1;
+
+        // get the last updated day
+        while(!result[index].count && index > 0){ index--; } 
+        if(getDaysPassed(result[index].date) > 1) return 0;
+
+        for(let i = index; i>=0; i--){
+            if(result[i].count > 0) streak++;
+            else break;
+        }
+        return streak;
+    }
+
+    const streakCount = calculateStreak();
 
     if(!list.length) return;
 
@@ -74,7 +93,7 @@ export default function HeatGraph({ list }) {
                 <div className="graph-stats-container">
                     <div>
                         <span>🔥 Current streak : </span>
-                        <span> 2 days</span>
+                        <span>{`${streakCount} ${streakCount === 1? "day" : "days"}`}</span>
                     </div>
                     <div>
                         <p>{`⚡ Peak acitivity : 

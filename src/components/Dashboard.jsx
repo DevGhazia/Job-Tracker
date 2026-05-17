@@ -6,6 +6,7 @@ import { Statitics } from "./Statitics";
 import { TiPlus } from "react-icons/ti";
 import { FaPlus } from "react-icons/fa6";
 import HeatGraph from "./HeatGraph";
+import { SiDatadotai } from "react-icons/si";
 
 const Dashboard = () => {
     const INITIAL_STATS = {"Applied": 0, "Interviewed" : 0, "Rejected": 0, "No-Response" : 0};
@@ -59,7 +60,9 @@ const Dashboard = () => {
 
     function getSortedList(){
         return companiesList.toSorted((a,b)=>{
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
+            const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+            if(dateDiff !== 0) return dateDiff;
+            return companiesList.indexOf(b) - companiesList.indexOf(a);
         })
     }
 
