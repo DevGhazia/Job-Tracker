@@ -22,10 +22,10 @@ export default function HeatGraph({ list }) {
     }
 
     function getCutOffDaysCount(){
-        let count = 60;
-        if(width <= 450) count = 20;
-        else if(width <= 640) count = 30; 
-        else if(width <= 800) count = 45;
+        let count = 45;
+        if(width <= 450) count = 15;
+        else if(width <= 600) count = 20; 
+        else if(width <= 800) count = 30;
         return count;
     }
 
@@ -65,7 +65,7 @@ export default function HeatGraph({ list }) {
     function calculateStreak(){
         if(!result.length) return 0;
 
-        let streak = 0;
+        let streak = 0; 
         let index = result.length - 1;
 
         // get the last updated day
@@ -97,7 +97,8 @@ export default function HeatGraph({ list }) {
                 <div className="graph-stats-container">
                     <div>
                         <big className={checkTodayStreakStatus()? "": "inactive"}>🔥 </big>
-                        <span>Current streak : 
+                        <span>Current streak : </span>
+                        <span>
                             {` ${streakCount} ${streakCount === 1? "day" : "days"}`}
                         </span>
                     </div>
@@ -105,7 +106,7 @@ export default function HeatGraph({ list }) {
                         <p>
                             <big>⚡</big>
                             {` Peak acitivity : 
-                            ${maxCount} ${maxCount > 0? "applications" : "job"} 
+                            ${maxCount} applied 
                             (${formateDate(peakDayDate)})`}
                         </p>
                     </div>
