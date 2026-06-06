@@ -150,6 +150,82 @@ nav{
   width: 100%;
 }
 
+.notification{
+  display: flex;
+  position: fixed;
+  top: -1rem;
+  justify-content: center;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  z-index: 101;
+  padding: 0.5rem;
+  max-width: 320px;
+}
+
+.notification.entering{
+  animation: showNotif 0.25s ease-in-out forwards;
+}
+
+.notification.leaving{
+  animation: hideNotif 0.25s ease-in-out forwards;
+}
+
+@keyframes showNotif {
+  from{
+    opacity: 0;
+    transform: translateY(0) scale(0.9);
+  } 
+  to{
+    opacity: 1;
+    transform: translateY(2rem) scale(1);
+  }
+}
+
+@keyframes hideNotif {
+  from{
+    opacity: 1;
+    transform: translateY(2rem) scale(1);
+  }
+  to{
+    opacity: 0;
+    transform: translateY(0) scale(0.9);
+  } 
+}
+
+.notification[data-action="Added"]{
+  background-color: var(--info);
+  border-color: var(--info-accent);
+  color: var(--info-text);
+}
+
+.notification[data-action="Deleted"]{
+  background-color: var(--danger); 
+  border-color: var(--danger-accent);
+  color: var(--danger-text);
+}
+
+.notification[data-action="Alert"]{
+  background-color: var(--interviewing);
+  border-color: var(--interviewing-accent);
+  color: var(--interviewing-text);
+}
+
+.noti-text-container{
+  display: flex;
+  width: 100%;
+  gap: 0.3rem;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.noti-name-span{
+  display: inline-block;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
 .form{
   display: grid;
   gap: 1rem;
@@ -277,6 +353,12 @@ nav{
   background-color: var(--button-hover);
 }
 
+.add-button:disabled{
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .experience-input{
   display: flex;
 }
@@ -315,6 +397,24 @@ nav{
   text-align: center;
   min-width: 0;
 }
+
+/* ====== ADD COMPANY OVERLAY ====== */
+.overlay{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 100;
+}
+
+.modal{
+  width: 100%;
+  max-width: 600px;
+  margin: 0 calc(2* var(--default-padding));
+}
+
 
 /* ------TABLE------- */
 
@@ -686,13 +786,13 @@ nav{
     --default-padding: 1rem;
   }
 
-  .form{
+  /* .form{
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-areas: 
     "item1 item1 item1" 
     "item2 item3 item4"
     "item5 item6 item7";
-  }
+  } */
 
   .list-heading{
     flex-direction: row;
@@ -732,13 +832,12 @@ nav{
 }
 
 @media (min-width: 1000px){
-  .form{
-    /* max-width: 1024px; */
+  /* .form{
     grid-template-columns: 1fr 1fr 1fr 1fr;
     grid-template-areas: 
       "item1 item1 item2 item3 "
       "item4 item5 item6 item7";
-  }
+  } */
 
   tr > *{
     display: table-cell;

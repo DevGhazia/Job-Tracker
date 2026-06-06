@@ -1,12 +1,13 @@
-import React from 'react'
 import { Outlet } from 'react-router-dom'
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
+import GlobalNotificationLayout from './GlobalNotificationLayout';
 
 export const AppLayout = () => {
     return (
         <main>
+            <GlobalNotificationLayout />
             <nav>
                 <div className='nav-logo'>
                     <FaRegPenToSquare fontSize="25px"/>

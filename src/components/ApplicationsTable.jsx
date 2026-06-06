@@ -6,7 +6,7 @@ import { GoClockFill, GoLocation } from "react-icons/go";
 import { HiLocationMarker } from "react-icons/hi";
 import { BiSolidMessageSquareCheck, BiSolidMessageSquareDots, BiSolidMessageSquareEdit, BiSolidMessageSquareError, BiSolidMessageSquareX } from "react-icons/bi";
 import { FaBusinessTime } from "react-icons/fa6";
-import { formateDate, getDaysPassed, getMonthName, STATUSES, TIMEOUT_PERIOD } from "../constants";
+import { ACTIONS, formateDate, getDaysPassed, getMonthName, STATUSES, TIMEOUT_PERIOD } from "../constants";
 
 const ApplicationsTable = ({list, updateList, handleDelete}) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
@@ -148,7 +148,7 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                                             <option key={key}>{value}</option>
                                         ))}
                                     </select>
-                                    <button className="delete-button" onClick={()=>handleDelete(app.id)}>
+                                    <button className="delete-button" onClick={()=>handleDelete(app.id, ACTIONS.DELETE, app.company)}>
                                         <RiDeleteBin2Line className="delete-svg"/>
                                     </button>
                                 </div>

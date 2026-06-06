@@ -7,10 +7,13 @@ import { TiPlus } from "react-icons/ti";
 import { FaPlus } from "react-icons/fa6";
 import HeatGraph from "./HeatGraph";
 import { SiDatadotai } from "react-icons/si";
+import Notification from "./Notification";
+import { RiCustomerService2Fill } from "react-icons/ri";
 
 const Dashboard = () => {
     const INITIAL_STATS = {"Applied": 0, "Interviewed" : 0, "Rejected": 0, "No-Response" : 0};
     const [companiesList, setCompaniesList] = useState([]); 
+    const [showModal, setShowModel] = useState(false);
     const [statsList, setStatsList] = useState(INITIAL_STATS);
 
     useEffect(() => {
@@ -54,7 +57,9 @@ const Dashboard = () => {
         updateApplication(id, fieldName, fieldValue);
     }
 
-    function handleDelete(id){
+    function handleDelete(id, action, name){
+        const event = new CustomEvent("trigger-toast", {detail: {action: action, companyName: name}});
+        window.dispatchEvent(event);
         deleteApplication(id);
     }
 
@@ -70,9 +75,18 @@ const Dashboard = () => {
         <section className="hero">
             <Statitics list={companiesList} stats={statsList}/>
             <HeatGraph list={getSortedList()}/>
-            <AddCompany addToTable={addToTable} list={companiesList}/>
+            {showModal && 
+                <div className="overlay" onClick={()=>setShowModel(false)}>
+                    <div className="modal" onClick={(e)=>e.stopPropagation()}>
+                        <AddCompany addToTable={addToTable} list={companiesList}/>
+                    </div>
+                </div>
+            }
             <ApplicationsTable updateList={updateList} list={getSortedList()} handleDelete={handleDelete}/>
-            <button className="fab-button">
+            <button 
+                className="fab-button"
+                onClick={()=>setShowModel(true)}
+                >
                 <FaPlus className="fab-button-icon" fontSize={35}/>
             </button>
         </section>

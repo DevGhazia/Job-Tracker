@@ -1,18 +1,20 @@
-const TIMEOUT_PERIOD = 14;
+export const TIMEOUT_PERIOD = 14;
 
-const ROLES = Object.freeze({
+export const ROLES = Object.freeze({
     SDE1: "Software Engineer-1",
     SDE2: "Software Engineer-2",
     SDE3: "Software Engineer-3",
 })
-const STATUSES = Object.freeze({
+
+export const STATUSES = Object.freeze({
     APPLIED: "Applied", 
     INTERVIEWING: "Interviewing",
     ACCEPTED: "Accepted",
     REJECTED: "Rejected",
     NORESPONSE: "No-Response",
 })
-const LOCATIONS = Object.freeze({
+
+export const LOCATIONS = Object.freeze({
     BANGALORE: "Bangalore",
     REMOTE: "Remote",
     GURGOAN: "Gurgoan",
@@ -22,11 +24,17 @@ const LOCATIONS = Object.freeze({
     HYDERABAD: "Hyderabad",
 })
 
-function getMonthName(date){
+export const ACTIONS = Object.freeze({
+    ADD: "Added",
+    DELETE: "Deleted",
+    ALERT: "Alert",
+})
+
+export function getMonthName(date){
     return date.toLocaleString('en-US', {month: 'long', timeZone: 'UTC'})
 }
 
-function formateDate(dateString){
+export function formateDate(dateString){
     return new Date(dateString).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -34,7 +42,7 @@ function formateDate(dateString){
     });
 }
 
-function getDaysPassed(date){
+export function getDaysPassed(date){
     const target = new Date(date);
     const today = new Date();
     const difference = today.getTime() - target.getTime();
@@ -42,5 +50,3 @@ function getDaysPassed(date){
     const totalDays = Math.floor(difference/ oneDay);   
     return totalDays;
 }
-
-export {ROLES, STATUSES, LOCATIONS, TIMEOUT_PERIOD, getMonthName, getDaysPassed, formateDate};

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { CiSearch } from "react-icons/ci";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
-import { ROLES, LOCATIONS, STATUSES} from "../constants";
+import { ROLES, LOCATIONS, STATUSES, ACTIONS} from "../constants";
+import { IoCloseSharp } from "react-icons/io5";
 
 export default function AddCompany({list, addToTable}){
     const FETCH_API = import.meta.env.VITE_API_BASE_URL;
@@ -93,13 +94,16 @@ export default function AddCompany({list, addToTable}){
     function handleAdd(){
         const exists = list.some((item)=>item.company === form.company);
         if(exists){
-            console.log("already added");
             setForm(initialForm);
+            const event = new CustomEvent("trigger-toast", {detail: {action: ACTIONS.ALERT, companyName: "Already exists"}})
+            window.dispatchEvent(event);    
                 return;
         } 
         const updatedForm = {...form, didInterview: form.status==="Interviewing"? true: false};
         addToTable(updatedForm);
         setForm(initialForm);
+        const event = new CustomEvent("trigger-toast", {detail: {action: ACTIONS.ADD, companyName: form.company}});
+        window.dispatchEvent(event);
     }
 
     function handleFormChange(e){
@@ -125,7 +129,6 @@ export default function AddCompany({list, addToTable}){
 
     return(
         <form className="form card" onSubmit={(e)=>e.preventDefault()} onKeyDown={handleKeyDown}>
-
             {/* ------ SEARCH BAR ------- */}
             <div className="search-container item1">
                 <label htmlFor="searchbar">Company Name</label>
