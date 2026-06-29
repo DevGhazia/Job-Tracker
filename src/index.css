@@ -98,8 +98,8 @@ span, select{
 }
 
 body{
-  background-color: var(--bg);
   scrollbar-gutter: stable;
+  overflow-y: scroll;
 }
 
 main{
@@ -110,6 +110,7 @@ main{
   min-height: 100dvh;
   align-items: center;
   padding: var(--default-padding);
+  background-color: var(--bg);
 }
 
 nav{
