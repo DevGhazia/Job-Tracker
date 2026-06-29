@@ -97,6 +97,11 @@ span, select{
   font: var(--p);
 }
 
+body{
+  background-color: var(--bg);
+  scrollbar-gutter: stable;
+}
+
 main{
   display: flex;
   flex-direction: column;
@@ -105,8 +110,6 @@ main{
   min-height: 100dvh;
   align-items: center;
   padding: var(--default-padding);
-  background-color: var(--bg);
-  scrollbar-gutter: stable;
 }
 
 nav{
