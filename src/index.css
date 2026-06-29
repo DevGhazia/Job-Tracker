@@ -106,6 +106,7 @@ main{
   align-items: center;
   padding: var(--default-padding);
   background-color: var(--bg);
+  scrollbar-gutter: stable;
 }
 
 nav{
