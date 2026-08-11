@@ -8,7 +8,6 @@ import { FaPlus } from "react-icons/fa6";
 import HeatGraph from "./HeatGraph";
 import { SiDatadotai } from "react-icons/si";
 import Notification from "./Notification";
-import { RiCustomerService2Fill } from "react-icons/ri";
 
 const Dashboard = () => {
     const INITIAL_STATS = {"Applied": 0, "Interviewed" : 0, "Rejected": 0, "No-Response" : 0};
@@ -27,13 +26,11 @@ const Dashboard = () => {
             if(comp.didInterview) 
                 acc["Interviewed"] = acc["Interviewed"] + 1;
             if(comp.status != "Interviewing" && comp.status != "Accepted"){
-                if(comp.status === "Applied") acc["Applied"] = companiesList.length;
-                else{
-                    acc[comp.status] = acc[comp.status] + 1;
-                }
+                acc[comp.status] = acc[comp.status] + 1;
             }
             return acc;
         }, INITIAL_STATS);
+        statsUpdate.Applied = companiesList.length;
         setStatsList(prev=> ({...prev, ...statsUpdate}));
     }, [companiesList]);
 

@@ -585,6 +585,7 @@ nav{
   color: hsl(210 40% 30%);
   padding-left: 1.75rem;
   padding-right: 1rem;
+  width: min-content;
 }
 
 .status-applied{
