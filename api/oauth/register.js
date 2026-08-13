@@ -12,19 +12,20 @@ export default async function handler(request, response) {
   }
 
   const clientId = randomToken();
+  const clientName = String(request.body?.client_name || "Claude").slice(0, 200);
   await getAdminFirestore().collection("mcpOAuthClients").doc(clientId).set({
     clientId,
-    clientName: String(request.body?.client_name || "Claude").slice(0, 200),
+    clientName,
     redirectUris,
     createdAt: new Date().toISOString(),
   });
 
-  return res.status(201).json({
-  client_id,
-  client_name: clientName,
-  redirect_uris: redirectUris,
-  grant_types: ["authorization_code", "refresh_token"],
-  response_types: ["code"],
-  token_endpoint_auth_method: "none",
-});
+  return response.status(201).json({
+    client_id: clientId,
+    client_name: clientName,
+    redirect_uris: redirectUris,
+    grant_types: ["authorization_code", "refresh_token"],
+    response_types: ["code"],
+    token_endpoint_auth_method: "none",
+  });
 }
