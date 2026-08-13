@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/.well-known/oauth-authorization-server",
+      "destination": "/api/oauth-authorization-server"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

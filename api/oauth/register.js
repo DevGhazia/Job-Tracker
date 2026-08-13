@@ -19,12 +19,12 @@ export default async function handler(request, response) {
     createdAt: new Date().toISOString(),
   });
 
-  return response.status(201).json({
-    client_id: clientId,
-    client_id_issued_at: Math.floor(Date.now() / 1000),
-    redirect_uris: redirectUris,
-    grant_types: ["authorization_code", "refresh_token"],
-    response_types: ["code"],
-    token_endpoint_auth_method: "none",
-  });
+  return res.status(201).json({
+  client_id,
+  client_name: clientName,
+  redirect_uris: redirectUris,
+  grant_types: ["authorization_code", "refresh_token"],
+  response_types: ["code"],
+  token_endpoint_auth_method: "none",
+});
 }
