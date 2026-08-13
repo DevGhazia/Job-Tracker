@@ -1,26 +1,17 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
 import { z } from "zod";
+import { baseUrl, getAdminFirestore, hash } from "./oauth/_shared.js";
 
 const STATUSES = ["Applied", "Interviewing", "Accepted", "Rejected", "No-Response"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-function getAdminFirestore() {
-  if (!getApps().length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-    initializeApp({ credential: cert(serviceAccount) });
-  }
+async function isAuthorized(request) {
+  const accessToken = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!accessToken) return false;
 
-  return getFirestore();
-}
-
-function isAuthorized(request) {
-  const expectedToken = process.env.MCP_API_KEY;
-  const authorization = request.headers.authorization;
-
-  return Boolean(expectedToken && authorization === `Bearer ${expectedToken}`);
+  const token = await getAdminFirestore().collection("mcpOAuthTokens").doc(hash(accessToken)).get();
+  return token.exists && token.data().expiresAt > Date.now();
 }
 
 function createServer() {
@@ -94,7 +85,9 @@ export default async function handler(request, response) {
     return response.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
+    const metadataUrl = `${baseUrl(request)}/api/oauth/protected-resource`;
+    response.setHeader("WWW-Authenticate", `Bearer resource_metadata="${metadataUrl}"`);
     return response.status(401).json({ error: "Unauthorized" });
   }
 

@@ -14,7 +14,7 @@ It creates a document at `users/{FIREBASE_MCP_USER_ID}/applications` with the sa
 
 Add these environment variables in the Vercel project settings before deploying. The `.env.example` file documents their names; do not commit their values.
 
-- `MCP_API_KEY`: a long, random secret shared only with your Claude MCP configuration.
+- `MCP_CONNECT_SECRET`: a long, random secret that you enter once in the Job Tracker approval page during Claude's OAuth connection.
 - `FIREBASE_MCP_USER_ID`: your Firebase Authentication UID. The endpoint never accepts a UID from Claude.
 - `FIREBASE_SERVICE_ACCOUNT_JSON`: a single-line Firebase service-account JSON object with Firestore access.
 
@@ -24,12 +24,7 @@ Find `FIREBASE_MCP_USER_ID` in Firebase Console → Authentication → Users. Cr
 
 ### Claude configuration
 
-Configure a remote HTTP MCP server using your deployed URL and bearer token. For Claude Code, for example:
-
-```sh
-claude mcp add --transport http job-tracker https://YOUR_DOMAIN/api/mcp \
-  --header "Authorization: Bearer YOUR_MCP_API_KEY"
-```
+In Claude.ai, add a custom connector with `https://YOUR_DOMAIN/api/mcp`. Leave the optional OAuth Client ID and Client Secret blank. Claude will open the Job Tracker approval page; enter `MCP_CONNECT_SECRET`, then return to Claude.
 
 Use `create_application` only after an application has been submitted. This integration does not search for jobs, schedule work, or automate a browser.
 
