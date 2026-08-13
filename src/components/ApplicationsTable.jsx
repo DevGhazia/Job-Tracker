@@ -108,7 +108,17 @@ const ApplicationsTable = ({list, updateList, handleDelete}) => {
                                     </div>
                                     <div className="cell-name">
                                         <h3>{app.company}</h3>
-                                        <span className="cell-name-span">{app.role}</span>
+                                        {app.jobUrl ?
+                                            <a
+                                                className="cell-name-span job-link"
+                                                href={app.jobUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                {app.role}
+                                            </a> :
+                                            <span className="cell-name-span">{app.role}</span>
+                                        }
                                     </div>
                                     <div className="tag-container">
                                         <GoClockFill className="tag-icon" />

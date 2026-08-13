@@ -512,6 +512,10 @@ nav{
   color: var(--text-muted);
 }
 
+.job-link{
+  text-decoration: underline;
+}
+
 .row-meta{
   display: flex;
   gap: 0.5rem;

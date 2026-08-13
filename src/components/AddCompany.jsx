@@ -16,6 +16,7 @@ export default function AddCompany({list, addToTable}){
         role: ROLES.SDE1,
         experience: 1,
         location: LOCATIONS.BANGALORE,
+        jobUrl: "",
         didInterview: false,
     }
     const [companies, setCompanies] = useState([]);
@@ -256,6 +257,20 @@ export default function AddCompany({list, addToTable}){
                     value={form.date}
                     max={today}
                     onChange={handleFormChange}
+                />
+            </div>
+
+            {/* ------ JOB URL ------- */}
+            <div className="search-container">
+                <label htmlFor="jobUrl">Job URL</label>
+                <input
+                    type="url"
+                    id="jobUrl"
+                    name="jobUrl"
+                    className="basic"
+                    value={form.jobUrl}
+                    onChange={handleFormChange}
+                    placeholder="https://company.com/jobs/..."
                 />
             </div>
 
