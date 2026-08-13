@@ -86,7 +86,7 @@ export default async function handler(request, response) {
   }
 
   if (!(await isAuthorized(request))) {
-    const metadataUrl = `${baseUrl(request)}/api/oauth/protected-resource`;
+    const metadataUrl =`${baseUrl(request)}/.well-known/oauth-protected-resource`;
     response.setHeader("WWW-Authenticate", `Bearer resource_metadata="${metadataUrl}"`);
     return response.status(401).json({ error: "Unauthorized" });
   }
