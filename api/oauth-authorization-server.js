@@ -1,15 +1,22 @@
+import { baseUrl, setCorsHeaders } from "./oauth/_shared.js";
+
 export default function handler(req, res) {
+  setCorsHeaders(req, res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  const base = baseUrl(req);
+
   res.status(200).json({
-    issuer: "https://thejobtracker.vercel.app",
+    issuer: base,
 
-    authorization_endpoint:
-      "https://thejobtracker.vercel.app/api/oauth/authorize",
+    authorization_endpoint: `${base}/api/oauth/authorize`,
 
-    token_endpoint:
-      "https://thejobtracker.vercel.app/api/oauth/token",
+    token_endpoint: `${base}/api/oauth/token`,
 
-    registration_endpoint:
-      "https://thejobtracker.vercel.app/api/oauth/register",
+    registration_endpoint: `${base}/api/oauth/register`,
 
     response_types_supported: ["code"],
 

@@ -1,17 +1,25 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { baseUrl, getAdminFirestore, hash } from "./oauth/_shared.js";
+import { baseUrl, getAdminFirestore, hash, setCorsHeaders } from "./oauth/_shared.js";
 
 const STATUSES = ["Applied", "Interviewing", "Accepted", "Rejected", "No-Response"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 async function isAuthorized(request) {
-  const accessToken = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+  const authHeader = request.headers?.authorization;
+  if (!authHeader) return false;
+
+  const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!accessToken) return false;
 
-  const token = await getAdminFirestore().collection("mcpOAuthTokens").doc(hash(accessToken)).get();
-  return token.exists && token.data().expiresAt > Date.now();
+  try {
+    const token = await getAdminFirestore().collection("mcpOAuthTokens").doc(hash(accessToken)).get();
+    return token.exists && token.data().expiresAt > Date.now();
+  } catch (err) {
+    console.error("Error verifying access token:", err);
+    return false;
+  }
 }
 
 function createServer() {
@@ -75,20 +83,27 @@ function createServer() {
 }
 
 export default async function handler(request, response) {
+  setCorsHeaders(request, response);
+
   if (request.method === "OPTIONS") {
-    response.setHeader("Allow", "POST, OPTIONS");
+    response.setHeader("Allow", "GET, POST, OPTIONS");
     return response.status(204).end();
   }
 
-  if (request.method !== "POST") {
-    response.setHeader("Allow", "POST, OPTIONS");
-    return response.status(405).json({ error: "Method not allowed" });
+  // Check authorization for all request methods
+  const authorized = await isAuthorized(request);
+  if (!authorized) {
+    const metadataUrl = `${baseUrl(request)}/.well-known/oauth-protected-resource`;
+    response.setHeader("WWW-Authenticate", `Bearer resource_metadata="${metadataUrl}"`);
+    return response.status(401).json({
+      error: "Unauthorized",
+      error_description: "Valid OAuth Bearer token required.",
+    });
   }
 
-  if (!(await isAuthorized(request))) {
-    const metadataUrl =`${baseUrl(request)}/.well-known/oauth-protected-resource`;
-    response.setHeader("WWW-Authenticate", `Bearer resource_metadata="${metadataUrl}"`);
-    return response.status(401).json({ error: "Unauthorized" });
+  if (request.method !== "POST" && request.method !== "GET") {
+    response.setHeader("Allow", "GET, POST, OPTIONS");
+    return response.status(405).json({ error: "Method not allowed" });
   }
 
   try {
