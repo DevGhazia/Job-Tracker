@@ -187,8 +187,8 @@ export async function fetchLinkedInJobs() {
         if (seenUrls.has(jobUrl)) continue;
         if (!isValidTitle(title)) continue;
 
-        // 1. Try Firecrawl AI Schema Extraction first if configured
-        const firecrawlData = await extractDetailsWithFirecrawl(jobUrl);
+        // 1. Try Firecrawl AI Schema Extraction for non-LinkedIn portals (Firecrawl restricts linkedin.com on public proxies)
+        const firecrawlData = !jobUrl.includes("linkedin.com") ? await extractDetailsWithFirecrawl(jobUrl) : null;
         if (firecrawlData) {
           if (!firecrawlData.isSuitableFor0To2YOE || (firecrawlData.yearsOfExperienceRequired && firecrawlData.yearsOfExperienceRequired > 2)) {
             continue;
