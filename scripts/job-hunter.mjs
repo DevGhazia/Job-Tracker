@@ -53,7 +53,7 @@ const TECH_KEYWORDS = [
   "associate frontend"
 ];
 
-// Strict exclusions for Senior / Staff / Lead / Non-engineering roles
+// Strict exclusions for Senior / Staff / Lead / Low-paying / Non-engineering roles
 const EXCLUDED_KEYWORDS = [
   "senior",
   "sr.",
@@ -74,6 +74,10 @@ const EXCLUDED_KEYWORDS = [
   "sde-3",
   "sde ii",
   "sde iii",
+  "internship",
+  "intern ",
+  "trainee",
+  "stipend",
   "recruiting",
   "recruiter",
   "sales",

@@ -1,30 +1,10 @@
-import { useState } from "react";
 import { HiLocationMarker, HiExternalLink } from "react-icons/hi";
-import { FaBusinessTime, FaCheck, FaCopy, FaTrash, FaBolt } from "react-icons/fa6";
+import { FaBusinessTime, FaCheck, FaTrash, FaBolt } from "react-icons/fa6";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
 import { formateDate } from "../constants";
 
 const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
-    const [copiedId, setCopiedId] = useState(null);
-    const [expandedNotes, setExpandedNotes] = useState({});
-
     if (!queueList || queueList.length === 0) return null;
-
-    function handleCopy(id, text) {
-        if (!text) return;
-        navigator.clipboard.writeText(text);
-        setCopiedId(id);
-        setTimeout(() => {
-            setCopiedId(null);
-        }, 2000);
-    }
-
-    function toggleNote(id) {
-        setExpandedNotes(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
-    }
 
     function getPortalBadgeColor(portal = "") {
         const p = portal.toLowerCase();
@@ -47,17 +27,18 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                     <div>
                         <h2>Action Queue</h2>
                         <p className="action-queue-subtitle">
-                            {queueList.length} {queueList.length === 1 ? "job needs" : "jobs need"} your quick review & 1-click apply
+                            {queueList.length} {queueList.length === 1 ? "job needs" : "jobs need"} your 1-click review & apply
                         </p>
                     </div>
                 </div>
                 <span className="queue-count-pill">{queueList.length} Pending</span>
             </div>
 
-            <div className="action-queue-grid">
+            <div className="action-queue-list">
                 {queueList.map((app) => (
-                    <div className="action-queue-card card" key={app.id}>
-                        <div className="queue-card-top">
+                    <div className="action-queue-row card" key={app.id}>
+                        {/* Left: Logo & Company / Role */}
+                        <div className="queue-row-main">
                             <div className="cell-logo-container">
                                 {app.logo ? (
                                     <img src={app.logo} alt="logo" className="cell-logo" />
@@ -65,8 +46,8 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                                     <PiBuildingOfficeDuotone className="cell-logo" style={{ padding: "0.35rem" }} />
                                 )}
                             </div>
-                            <div className="queue-card-info">
-                                <div className="queue-card-headline">
+                            <div className="queue-row-info">
+                                <div className="queue-row-headline">
                                     <h3>{app.company}</h3>
                                     {app.portalName && (
                                         <span className={`portal-badge ${getPortalBadgeColor(app.portalName)}`}>
@@ -78,77 +59,41 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                             </div>
                         </div>
 
-                        <div className="queue-card-meta">
+                        {/* Middle: Meta badges (Location, Experience, Date) */}
+                        <div className="queue-row-meta">
                             <div className="tag-container">
                                 <HiLocationMarker className="tag-icon" />
                                 <span>{app.location || "Remote"}</span>
                             </div>
                             <div className="tag-container">
                                 <FaBusinessTime className="tag-icon" />
-                                <span>{app.experience !== undefined ? (app.experience === 0 ? "Entry-level" : `${app.experience}+ yrs`) : "Experience N/A"}</span>
+                                <span>{app.experience !== undefined ? (app.experience === 0 ? "Entry-level" : `${app.experience}+ yrs`) : "0-2 yrs"}</span>
                             </div>
-                            <div className="tag-container">
-                                <span>Queued: {formateDate(app.date)}</span>
+                            <div className="tag-container queue-date-tag">
+                                <span>{formateDate(app.date)}</span>
                             </div>
                         </div>
 
-                        {app.notes && (
-                            <div className="queue-notes-container">
-                                <div className="queue-notes-header">
-                                    <span className="queue-notes-label">💡 AI Tailored Pitch Note</span>
-                                    <div className="queue-notes-actions">
-                                        <button
-                                            type="button"
-                                            className="copy-note-btn"
-                                            onClick={() => handleCopy(app.id, app.notes)}
-                                            title="Copy note to clipboard"
-                                        >
-                                            {copiedId === app.id ? (
-                                                <>
-                                                    <FaCheck className="copy-icon-success" /> Copied!
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaCopy /> Copy
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="expand-note-btn"
-                                            onClick={() => toggleNote(app.id)}
-                                        >
-                                            {expandedNotes[app.id] ? "Show less" : "Expand"}
-                                        </button>
-                                    </div>
-                                </div>
-                                <p className={`queue-notes-text ${expandedNotes[app.id] ? "expanded" : "collapsed"}`}>
-                                    {app.notes}
-                                </p>
-                            </div>
-                        )}
-
-                        <div className="queue-card-footer">
-                            <div className="queue-card-primary-actions">
-                                {app.jobUrl && (
-                                    <a
-                                        href={app.jobUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="btn-apply-portal"
-                                    >
-                                        Open & Apply <HiExternalLink className="btn-icon" />
-                                    </a>
-                                )}
-                                <button
-                                    type="button"
-                                    className="btn-mark-applied"
-                                    onClick={() => onMarkApplied(app.id)}
-                                    title="Mark as Applied"
+                        {/* Right: Actions */}
+                        <div className="queue-row-actions">
+                            {app.jobUrl && (
+                                <a
+                                    href={app.jobUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="btn-apply-portal"
                                 >
-                                    <FaCheck className="btn-icon" /> Mark as Applied
-                                </button>
-                            </div>
+                                    Open & Apply <HiExternalLink className="btn-icon" />
+                                </a>
+                            )}
+                            <button
+                                type="button"
+                                className="btn-mark-applied"
+                                onClick={() => onMarkApplied(app.id)}
+                                title="Mark as Applied"
+                            >
+                                <FaCheck className="btn-icon" /> Mark as Applied
+                            </button>
                             <button
                                 type="button"
                                 className="btn-dismiss-queue"

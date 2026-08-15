@@ -102,6 +102,8 @@
       "US / EU International Remote (USD Contracts)"
     ],
     "noticePeriod": "Immediate (<= 15 days)",
+    "minimumSalaryINR": "8 LPA (₹8,00,000 INR)",
+    "minimumSalaryUSD": "$20,000 USD / year",
     "salaryStrategy": {
       "startup": "15 - 18 LPA (₹15,00,000 INR)",
       "growthTech": "18 - 22 LPA (₹18,00,000 INR)",
