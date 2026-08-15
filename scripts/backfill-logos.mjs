@@ -1,13 +1,5 @@
-#!/usr/bin/env node
-import { discoverLiveJobs, generateTailoredPitch } from "./job-hunter.mjs";
-import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = resolve(__dirname, "..");
 
 const serviceAccount = {
   type: "service_account",
@@ -29,53 +21,27 @@ if (!getApps().length) {
 const db = getFirestore();
 const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
-async function runSearchAndQueue() {
-  const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
-  const jobs = await discoverLiveJobs();
-
-  if (jobs.length === 0) {
-    console.log("No new jobs found matching your criteria.");
-    return;
-  }
-
-  // Get existing applications to avoid duplicates
+async function backfillLogos() {
   const snapshot = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications").get();
-  const existingUrls = new Set(snapshot.docs.map(d => d.data().jobUrl).filter(Boolean));
+  const batch = db.batch();
+  let count = 0;
 
-  let queuedCount = 0;
-  const today = new Date().toISOString().split("T")[0];
-
-  for (const job of jobs) {
-    if (existingUrls.has(job.jobUrl)) {
-      console.log(`⏩ Skipping already tracked job: ${job.role} at ${job.company}`);
-      continue;
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    if (!data.logo && data.company) {
+      const cleanCompany = data.company.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const logoUrl = `https://unavatar.io/${cleanCompany}.com?fallback=https://logo.clearbit.com/${cleanCompany}.com`;
+      batch.update(doc.ref, { logo: logoUrl });
+      count++;
     }
+  });
 
-    const tailoredPitch = generateTailoredPitch(job, profile);
-    const cleanCompany = (job.company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const logoUrl = job.logo || (cleanCompany ? `https://unavatar.io/${cleanCompany}.com?fallback=https://logo.clearbit.com/${cleanCompany}.com` : null);
-
-    const newApp = {
-      logo: logoUrl,
-      company: job.company,
-      role: job.role,
-      location: job.location,
-      experience: job.experience,
-      jobUrl: job.jobUrl,
-      portalName: job.portalName,
-      notes: tailoredPitch,
-      status: "Queued",
-      date: today,
-      didInterview: false
-    };
-
-    const doc = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications").add(newApp);
-    console.log(`⚡ Queued: ${job.role} at ${job.company} [ID: ${doc.id}]`);
-    existingUrls.add(job.jobUrl);
-    queuedCount++;
+  if (count > 0) {
+    await batch.commit();
+    console.log(`Backfilled logo for ${count} application(s).`);
+  } else {
+    console.log("All applications already have logos.");
   }
-
-  console.log(`\n🎉 Successfully queued ${queuedCount} new jobs to your Action Queue!`);
 }
 
-runSearchAndQueue();
+backfillLogos();
