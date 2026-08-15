@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { discoverLiveJobs, generateTailoredPitch } from "./job-hunter.mjs";
+import { sendWhatsAppNotification } from "./notifier.mjs";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,6 +66,7 @@ async function runSearchAndQueue() {
   });
 
   let queuedCount = 0;
+  const newlyQueued = [];
   const today = new Date().toISOString().split("T")[0];
 
   for (const job of jobs) {
@@ -97,9 +99,19 @@ async function runSearchAndQueue() {
     console.log(`⚡ Queued: ${job.role} at ${job.company} [ID: ${doc.id}]`);
     existingUrls.add(job.jobUrl);
     queuedCount++;
+    newlyQueued.push(job);
   }
 
   console.log(`\n🎉 Successfully queued ${queuedCount} new jobs to your Action Queue!`);
+
+  if (queuedCount > 0) {
+    const summary = newlyQueued
+      .slice(0, 5)
+      .map((j, idx) => `${idx + 1}. *${j.role}* at *${j.company}* (${j.portalName || j.source})`)
+      .join("\n");
+    const waMsg = `⚡ *Job Tracker Alert!*\n\nFound and queued *${queuedCount}* new verified frontend role(s):\n\n${summary}\n\n👉 Review & Apply: https://thejobtracker.vercel.app/`;
+    await sendWhatsAppNotification(waMsg);
+  }
 }
 
 runSearchAndQueue();
