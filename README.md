@@ -1,34 +1,34 @@
 # Job Tracker
 
-React + Vite job-application tracker using Firebase Authentication and Firestore.
+React + Vite job-application tracker using Firebase Authentication and Firestore, featuring a dedicated **Action Queue** and **Antigravity MCP Server**.
 
-## MCP endpoint
+## Antigravity MCP Integration
 
-The deployed Vercel project exposes one authenticated MCP tool at `https://YOUR_DOMAIN/api/mcp`:
+Job Tracker provides a local Stdio MCP server at `scripts/mcp-server.mjs` with the following tools:
 
-`create_application(company, role, location, experience, jobUrl?, status?, date)`
+- **`create_application`**: Adds a job application to your tracker.
+- **`queue_application`**: Queues a job into your **Action Queue** with direct links and AI-tailored pitch notes.
+- **`list_applications`**: Lists tracked jobs, with optional status filtering (`Queued`, `Applied`, `Interviewing`, etc.).
+- **`update_application_status`**: Updates the status of any application.
+- **`delete_application`**: Deletes an application by ID.
+- **`get_application_stats`**: Retrieves statistical summaries.
 
-It creates a document at `users/{FIREBASE_MCP_USER_ID}/applications` with the same fields the React app uses. `jobUrl` is optional, and the dashboard makes the role clickable when it is present.
+### Configuration (`~/.gemini/config/mcp_config.json`)
 
-### Vercel environment variables
+```json
+{
+  "mcpServers": {
+    "job-tracker": {
+      "command": "node",
+      "args": [
+        "c:/Users/vivku/OneDrive/Desktop/Projects/Job-Tracker/scripts/mcp-server.mjs"
+      ]
+    }
+  }
+}
+```
 
-Add these environment variables in the Vercel project settings before deploying. The `.env.example` file documents their names; do not commit their values.
-
-- `MCP_CONNECT_SECRET`: a long, random secret that you enter once in the Job Tracker approval page during Claude's OAuth connection.
-- `FIREBASE_MCP_USER_ID`: your Firebase Authentication UID. The endpoint never accepts a UID from Claude.
-- `FIREBASE_SERVICE_ACCOUNT_JSON`: a single-line Firebase service-account JSON object with Firestore access.
-
-Keep all three server-only: do not prefix them with `VITE_`, do not place them in a frontend file, and do not paste them into chat prompts.
-
-Find `FIREBASE_MCP_USER_ID` in Firebase Console → Authentication → Users. Create the service-account key from Firebase Console → Project settings → Service accounts, then add the downloaded JSON as the `FIREBASE_SERVICE_ACCOUNT_JSON` Vercel value. Treat that JSON like a password: it gives the endpoint privileged Firestore access.
-
-### Claude configuration
-
-In Claude.ai, add a custom connector with `https://YOUR_DOMAIN/api/mcp`. Leave the optional OAuth Client ID and Client Secret blank. Claude will open the Job Tracker approval page; enter `MCP_CONNECT_SECRET`, then return to Claude.
-
-Use `create_application` only after an application has been submitted. This integration does not search for jobs, schedule work, or automate a browser.
-
-## Local development
+## Local Development
 
 ```sh
 npm install
