@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { PiBuildingOfficeDuotone, PiCalendarDotsFill } from "react-icons/pi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { GoClockFill } from "react-icons/go";
-import { HiLocationMarker } from "react-icons/hi";
+import { HiLocationMarker, HiBriefcase } from "react-icons/hi";
 import {
     BiSolidMessageSquareCheck,
     BiSolidMessageSquareDots,
@@ -91,7 +91,10 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
         <section className="list-container">
             <div className="list-heading">
                 <div className="list-heading-text">
-                    <h2>Companies</h2>
+                    <div className="section-title-wrapper">
+                        <HiBriefcase className="section-title-icon" />
+                        <h2>Companies</h2>
+                    </div>
                     <p>{`${filteredList.length} ${filteredList.length === 1 ? "company" : "companies"} tracked`}</p>
                 </div>
                 <div className="search-wrapper">

@@ -1,20 +1,24 @@
-import React from 'react'
-import { TbClock, TbMessageDots, TbSend, TbXboxX } from 'react-icons/tb'
+import React from 'react';
+import { TbClock, TbMessageDots, TbSend, TbXboxX, TbChartBar } from 'react-icons/tb';
 
 export const Statitics = ({list, stats}) => {
     function getStatIcon(stat){
         switch(stat){
-            case "Applied" : return <TbSend className='stats-icon'/>;break;
-            case "Interviewed": return <TbMessageDots className='stats-icon'/>; break;
-            case "Rejected": return <TbXboxX className='stats-icon'/>; break;
-            case "No-Response": return <TbClock className='stats-icon'/>; break;
+            case "Applied" : return <TbSend className='stats-icon'/>;
+            case "Interviewed": return <TbMessageDots className='stats-icon'/>;
+            case "Rejected": return <TbXboxX className='stats-icon'/>;
+            case "No-Response": return <TbClock className='stats-icon'/>;
+            default: return <TbSend className='stats-icon'/>;
         }
     }
 
     return (
         <div className="stats-container">
             <div>
-                <h2>Statitics</h2>
+                <div className="section-title-wrapper">
+                    <TbChartBar className="section-title-icon" />
+                    <h2>Statistics</h2>
+                </div>
                 <small>Visual overview of your active job search stages</small>
             </div>
             <div className="stats">
@@ -30,5 +34,5 @@ export const Statitics = ({list, stats}) => {
                 })}
             </div>
         </div>
-    )
-}
+    );
+};

@@ -1,4 +1,4 @@
-import { HiLocationMarker, HiCalendar } from "react-icons/hi";
+import { HiLocationMarker, HiCalendar, HiLightningBolt } from "react-icons/hi";
 import { FaBusinessTime } from "react-icons/fa6";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
 import { RiDeleteBin2Line } from "react-icons/ri";
@@ -29,7 +29,10 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
         <section className="action-queue-section">
             <div className="action-queue-header">
                 <div className="list-heading-text">
-                    <h2>Action Queue</h2>
+                    <div className="section-title-wrapper">
+                        <HiLightningBolt className="section-title-icon queue-title-icon" />
+                        <h2>Action Queue</h2>
+                    </div>
                     <p className="action-queue-subtitle">
                         {queueList.length} {queueList.length === 1 ? "job needs" : "jobs need"} your 1-click review & apply
                     </p>
@@ -95,7 +98,7 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                                     title="Mark as Applied"
                                 >
                                     <BiSolidMessageSquareCheck className="apply-btn-icon" />
-                                    <span>Applied</span>
+                                    <span>Mark as Applied</span>
                                 </button>
                                 <button
                                     type="button"

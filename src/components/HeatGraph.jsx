@@ -1,6 +1,7 @@
 import { Tracker, Card } from "@tremor/react";
 import { formateDate, getDaysPassed, getMonthName } from "../constants";
 import { useEffect, useState } from "react";
+import { HiFire } from "react-icons/hi";
 
 export default function HeatGraph({ list }) {
 
@@ -90,7 +91,10 @@ export default function HeatGraph({ list }) {
     return (
         <section className="section-heatmap">
             <div>
-                <h2>Activity Map</h2>
+                <div className="section-title-wrapper">
+                    <HiFire className="section-title-icon heat-title-icon" />
+                    <h2>Activity Map</h2>
+                </div>
                 <small>Visual timeline for the applications sent</small>
             </div>
             <div className="card graph-container">
