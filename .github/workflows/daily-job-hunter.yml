@@ -2,8 +2,8 @@ name: Daily Job Discovery
 
 on:
   schedule:
-    # Runs everyday at 03:30 UTC (9:00 AM IST)
-    - cron: '30 3 * * *'
+    # Runs everyday at 15:30 UTC (9:00 PM IST)
+    - cron: '30 15 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 jobs:
@@ -23,4 +23,6 @@ jobs:
         run: npm ci
 
       - name: Run Job Hunter & Queue
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY || 'fc-b45480c48b2548219e66ab2f246e13a7' }}
         run: node scripts/search-and-queue.mjs
