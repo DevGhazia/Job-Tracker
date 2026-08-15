@@ -2,7 +2,7 @@ import AddCompany from "./AddCompany";
 import ApplicationsTable from "./ApplicationsTable";
 import ActionQueue from "./ActionQueue";
 import { useEffect, useState } from "react";
-import { addApplication, deleteApplication, listenToApplications, updateApplication } from "../utils_firebase";
+import { addApplication, deleteApplication, dismissApplication, clearAllQueuedApplications, listenToApplications, updateApplication } from "../utils_firebase";
 import { Statitics } from "./Statitics";
 import { FaPlus } from "react-icons/fa6";
 import HeatGraph from "./HeatGraph";
@@ -72,6 +72,29 @@ const Dashboard = () => {
         deleteApplication(id);
     }
 
+    function handleDismissQueue(id, action, name) {
+        const targetApp = companiesList.find((c) => c.id === id);
+        const event = new CustomEvent("trigger-toast", {
+            detail: { action: action || ACTIONS.DELETE, companyName: name },
+        });
+        window.dispatchEvent(event);
+        if (targetApp) {
+            dismissApplication(targetApp);
+        } else {
+            deleteApplication(id);
+        }
+    }
+
+    function handleClearAllQueue() {
+        if (queuedList.length === 0) return;
+        const count = queuedList.length;
+        clearAllQueuedApplications(queuedList);
+        const event = new CustomEvent("trigger-toast", {
+            detail: { action: ACTIONS.DELETE, companyName: `${count} queued jobs` },
+        });
+        window.dispatchEvent(event);
+    }
+
     function getSortedActiveList() {
         return activeList.toSorted((a, b) => {
             const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -89,7 +112,8 @@ const Dashboard = () => {
             <ActionQueue
                 queueList={queuedList}
                 onMarkApplied={handleMarkApplied}
-                onDelete={handleDelete}
+                onDelete={handleDismissQueue}
+                onClearAll={handleClearAllQueue}
             />
 
             {showModal && (

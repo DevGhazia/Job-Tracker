@@ -12,6 +12,7 @@
     "auto-apply": "node scripts/auto-apply.mjs"
   },
   "dependencies": {
+    "@mendable/firecrawl-js": "^4.32.2",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@tremor/react": "^3.18.7",
     "firebase": "^12.10.0",

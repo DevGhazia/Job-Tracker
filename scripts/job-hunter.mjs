@@ -47,6 +47,48 @@ const STRICT_EXCLUSIONS = [
   "stipend"
 ];
 
+import FirecrawlApp from "@mendable/firecrawl-js";
+
+const FIRECRAWL_KEY = process.env.FIRECRAWL_API_KEY || process.env.VITE_FIRECRAWL_API_KEY;
+let firecrawlClient = null;
+if (FIRECRAWL_KEY) {
+  try {
+    firecrawlClient = new FirecrawlApp({ apiKey: FIRECRAWL_KEY });
+    console.log("🔥 Firecrawl AI scraping active for deep experience extraction!");
+  } catch (e) {
+    console.warn("Could not initialize Firecrawl:", e.message);
+  }
+}
+
+export async function extractDetailsWithFirecrawl(jobUrl) {
+  if (!firecrawlClient) return null;
+  try {
+    const scrape = await firecrawlClient.scrapeUrl(jobUrl, {
+      formats: ["extract"],
+      extract: {
+        schema: {
+          type: "object",
+          properties: {
+            yearsOfExperienceRequired: { type: "number", description: "Required years of experience" },
+            isSuitableFor0To2YOE: { type: "boolean", description: "True if role is suitable for 0-2 years experience" },
+            requiresAWS: { type: "boolean", description: "True if strictly requires AWS or DevOps" },
+            requiresSolidity: { type: "boolean", description: "True if requires Solidity or Blockchain" },
+            requiresFlutter: { type: "boolean", description: "True if requires Flutter" },
+            requiresBackend: { type: "boolean", description: "True if primarily a backend or fullstack role" }
+          },
+          required: ["yearsOfExperienceRequired", "isSuitableFor0To2YOE"]
+        }
+      }
+    });
+    if (scrape.success && scrape.extract) {
+      return scrape.extract;
+    }
+  } catch (err) {
+    console.warn(`[Firecrawl] Fallback to direct parsing for ${jobUrl}:`, err.message);
+  }
+  return null;
+}
+
 export function getDynamicSalary(companyTier, profile) {
   const strategies = profile?.preferences?.salaryStrategy || {};
   switch (companyTier) {
@@ -135,7 +177,18 @@ export async function fetchLinkedInJobs() {
         if (seenUrls.has(jobUrl)) continue;
         if (!isValidTitle(title)) continue;
 
-        // Fetch job description to strictly verify experience and non-target tech stacks
+        // 1. Try Firecrawl AI Schema Extraction first if configured
+        const firecrawlData = await extractDetailsWithFirecrawl(jobUrl);
+        if (firecrawlData) {
+          if (!firecrawlData.isSuitableFor0To2YOE || (firecrawlData.yearsOfExperienceRequired && firecrawlData.yearsOfExperienceRequired > 2)) {
+            continue;
+          }
+          if (firecrawlData.requiresAWS || firecrawlData.requiresSolidity || firecrawlData.requiresFlutter || firecrawlData.requiresBackend) {
+            continue;
+          }
+        }
+
+        // 2. Fetch direct job description for full-text and experience validation
         let jobDesc = "";
         const jobIdMatch = jobUrl.match(/(\d+)(?:[^\d]|$)/);
         if (jobIdMatch) {
@@ -160,14 +213,15 @@ export async function fetchLinkedInJobs() {
 
         const fullText = `${title} ${jobDesc}`.toLowerCase();
 
-        // 1. Check strict exclusions in JD
+        // 3. Check strict exclusions in title and description
         const hasExcluded = STRICT_EXCLUSIONS.some(ex => fullText.includes(ex));
         if (hasExcluded) continue;
 
-        // 2. Check experience requirement
+        // 4. Check experience requirement
         const expCheck = extractExperience(jobDesc);
         if (!expCheck.valid) continue;
 
+        const assignedExp = (firecrawlData && firecrawlData.yearsOfExperienceRequired) ? Math.min(firecrawlData.yearsOfExperienceRequired, 2) : expCheck.exp;
         const clearoutLogo = await fetchClearoutLogo(company);
         const finalLogo = clearoutLogo || logo || null;
 
@@ -179,7 +233,7 @@ export async function fetchLinkedInJobs() {
           location,
           jobUrl,
           logo: finalLogo,
-          experience: expCheck.exp,
+          experience: assignedExp,
           portalName: "LinkedIn",
           source: "LinkedIn Jobs"
         });

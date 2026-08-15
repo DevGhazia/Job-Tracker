@@ -938,6 +938,12 @@ nav{
   margin-top: 0.15rem;
 }
 
+.queue-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .queue-count-pill {
   background: hsl(38 92% 92%);
   color: hsl(32 90% 30%);
@@ -946,6 +952,24 @@ nav{
   padding: 0.25rem 0.65rem;
   border-radius: var(--border-radius);
   border: 1px solid hsl(38 92% 75%);
+}
+
+.queue-clear-all-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: var(--default-border);
+  border-radius: var(--border-radius);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+}
+
+.queue-clear-all-btn:hover {
+  color: #b91c1c;
+  background-color: #fee2e2;
+  border-color: #fca5a5;
 }
 
 .action-queue-list {

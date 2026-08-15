@@ -38,16 +38,43 @@ async function runSearchAndQueue() {
     return;
   }
 
-  // Get existing applications to avoid duplicates
-  const snapshot = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications").get();
-  const existingUrls = new Set(snapshot.docs.map(d => d.data().jobUrl).filter(Boolean));
+  // Get existing applications and dismissed jobs to avoid duplicates and re-adding dismissed companies
+  const existingUrls = new Set();
+  const existingSignatures = new Set();
+
+  const appsSnapshot = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications").get();
+  appsSnapshot.docs.forEach((d) => {
+    const data = d.data();
+    if (data.jobUrl) existingUrls.add(data.jobUrl.trim().toLowerCase());
+    if (data.company && data.role) {
+      const cleanCompany = data.company.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const cleanRole = data.role.toLowerCase().replace(/[^a-z0-9]/g, "");
+      existingSignatures.add(`${cleanCompany}::${cleanRole}`);
+    }
+  });
+
+  const dismissedSnapshot = await db.collection("users").doc(DEFAULT_USER_ID).collection("dismissed_jobs").get();
+  dismissedSnapshot.docs.forEach((d) => {
+    const data = d.data();
+    if (data.jobUrl) existingUrls.add(data.jobUrl.trim().toLowerCase());
+    if (data.company && data.role) {
+      const cleanCompany = data.company.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const cleanRole = data.role.toLowerCase().replace(/[^a-z0-9]/g, "");
+      existingSignatures.add(`${cleanCompany}::${cleanRole}`);
+    }
+  });
 
   let queuedCount = 0;
   const today = new Date().toISOString().split("T")[0];
 
   for (const job of jobs) {
-    if (existingUrls.has(job.jobUrl)) {
-      console.log(`⏩ Skipping already tracked job: ${job.role} at ${job.company}`);
+    const cleanCompany = (job.company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const cleanRole = (job.role || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const signature = `${cleanCompany}::${cleanRole}`;
+    const cleanUrl = (job.jobUrl || "").trim().toLowerCase();
+
+    if ((cleanUrl && existingUrls.has(cleanUrl)) || existingSignatures.has(signature)) {
+      console.log(`⏩ Skipping already tracked or previously dismissed job: ${job.role} at ${job.company}`);
       continue;
     }
 

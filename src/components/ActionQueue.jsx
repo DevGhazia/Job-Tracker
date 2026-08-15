@@ -5,7 +5,7 @@ import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiSolidMessageSquareCheck } from "react-icons/bi";
 import { ACTIONS, formateDate } from "../constants";
 
-const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
+const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) => {
     if (!queueList || queueList.length === 0) return null;
 
     function getPortalBadgeColor(portal = "") {
@@ -38,7 +38,19 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                         {queueList.length} {queueList.length === 1 ? "job needs" : "jobs need"} your 1-click review & apply
                     </p>
                 </div>
-                <span className="queue-count-pill">{queueList.length} Pending</span>
+                <div className="queue-header-actions">
+                    <span className="queue-count-pill">{queueList.length} Pending</span>
+                    {onClearAll && (
+                        <button
+                            type="button"
+                            className="queue-clear-all-btn"
+                            onClick={onClearAll}
+                            title="Dismiss and clear all queued applications"
+                        >
+                            Clear All
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="action-queue-list">
