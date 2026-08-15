@@ -1,5 +1,5 @@
 import { HiLocationMarker, HiCalendar } from "react-icons/hi";
-import { FaBusinessTime, FaCheck, FaTrash, FaBolt } from "react-icons/fa6";
+import { FaBusinessTime, FaCheck, FaTrash } from "react-icons/fa6";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
 import { formateDate } from "../constants";
 
@@ -26,16 +26,11 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
     return (
         <section className="action-queue-section">
             <div className="action-queue-header">
-                <div className="action-queue-title">
-                    <div className="action-queue-icon-wrapper">
-                        <FaBolt className="action-queue-icon" />
-                    </div>
-                    <div>
-                        <h2>Action Queue</h2>
-                        <p className="action-queue-subtitle">
-                            {queueList.length} {queueList.length === 1 ? "job needs" : "jobs need"} your 1-click review & apply
-                        </p>
-                    </div>
+                <div className="list-heading-text">
+                    <h2>Action Queue</h2>
+                    <p className="action-queue-subtitle">
+                        {queueList.length} {queueList.length === 1 ? "job needs" : "jobs need"} your 1-click review & apply
+                    </p>
                 </div>
                 <span className="queue-count-pill">{queueList.length} Pending</span>
             </div>
