@@ -534,15 +534,16 @@ nav{
 }
 
 .table-row-headline h3{
-  text-transform: capitalize;
+  font: var(--h3);
   font-weight: 600;
-  font-size: 0.95rem;
+  text-transform: capitalize;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: none;
-  margin: 0;
+  min-width: 0;
+  flex-shrink: 1;
   color: var(--text);
+  margin: 0;
 }
 
 .cell-name-span{
@@ -552,13 +553,6 @@ nav{
 
 .job-link{
   text-decoration: underline;
-}
-
-.time-elapsed-tag{
-  font-size: 0.75rem;
-  padding: 0 0.35rem;
-  height: 1.35rem;
-  flex-shrink: 0;
 }
 
 .row-meta{
@@ -626,7 +620,7 @@ nav{
 }
 
 .delete-button:hover{
-  transform: scale(1.02);
+  transform: scale(1.05);
   background-color: #fee2e2;
   border-color: #fca5a5;
 }
@@ -998,7 +992,22 @@ nav{
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.queue-row-headline h3 {
+  font: var(--h3);
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex-shrink: 1;
+  color: var(--text);
+  margin: 0;
 }
 
 .queue-row-meta {
@@ -1026,6 +1035,22 @@ nav{
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.badge-time {
+  background: var(--bg-dark);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.badge-clock-icon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 .badge-wellfound {
@@ -1085,12 +1110,13 @@ nav{
   border: 1px solid var(--info-accent);
   background-color: var(--info);
   color: var(--info-text);
-  transition: transform 0.2s, background-color 0.2s;
+  transition: transform 0.15s ease, filter 0.15s ease;
   white-space: nowrap;
 }
 
 .action-queue-apply-btn:hover {
-  transform: scale(1.02);
+  transform: scale(1.05);
+  filter: brightness(0.97);
 }
 
 .apply-btn-icon {
