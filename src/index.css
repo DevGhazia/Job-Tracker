@@ -522,18 +522,10 @@ nav{
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  overflow: hidden;
 }
 
-.table-row-headline{
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.table-row-headline h3{
+.cell-name h3{
   font: var(--h3);
   font-weight: 600;
   text-transform: capitalize;
@@ -541,7 +533,7 @@ nav{
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  flex-shrink: 1;
+  max-width: 250px;
   color: var(--text);
   margin: 0;
 }
@@ -646,11 +638,11 @@ nav{
   height: var(--input-height);
   border: var(--default-border);
   text-transform: uppercase;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 500;
   color: hsl(210 40% 30%);
-  padding-left: 2rem;
-  padding-right: 1.5rem;
+  padding-left: 2.1rem;
+  padding-right: 1.25rem;
   width: auto;
   border-radius: var(--border-radius);
   display: inline-flex;
@@ -706,7 +698,7 @@ nav{
 
 .select-preicon{
   position: absolute;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1116,10 +1108,10 @@ nav{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   height: var(--input-height);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 500;
   text-transform: uppercase;
   padding: 0 0.85rem;
@@ -1137,7 +1129,7 @@ nav{
 }
 
 .apply-btn-icon {
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
 .status-queued {

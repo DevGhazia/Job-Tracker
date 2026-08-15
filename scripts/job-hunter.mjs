@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +19,8 @@ const TARGET_COMPANIES = [
   { company: "Urban Company", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/urbancompany/jobs" },
   { company: "PhysicsWallah", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/physicswallah/jobs" },
   { company: "Supabase", tier: "startup", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/supabase/jobs" },
+  { company: "Sentry", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/sentry/jobs" },
+  { company: "Datadog", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/datadog/jobs" },
   { company: "GitLab", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs" },
   { company: "Docker", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/docker/jobs" },
   { company: "Automattic", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/automattic/jobs" },
@@ -98,22 +100,30 @@ const EXCLUDED_KEYWORDS = [
 
 export function getDynamicSalary(companyTier, profile) {
   const strategies = profile.preferences?.salaryStrategy || {};
-  if (companyTier === "startup") return strategies.startup || "15 - 18 LPA";
-  if (companyTier === "growth") return strategies.growthTech || "18 - 22 LPA";
-  if (companyTier === "enterprise") return strategies.enterpriseTech || "20 - 25 LPA";
-  return strategies.default || "15 - 20 LPA";
+  switch (companyTier) {
+    case "startup":
+      return strategies.startup_early_stage || "15 - 18 LPA";
+    case "growth":
+      return strategies.growth_unicorn || "18 - 22 LPA";
+    case "enterprise":
+      return strategies.enterprise_faang || "20 - 25 LPA";
+    case "remote_us":
+      return strategies.remote_international || "$35,000 - $60,000 USD";
+    default:
+      return "16 - 20 LPA";
+  }
 }
 
 export async function fetchGreenhouseJobs(companyObj) {
   try {
-    const res = await fetch(companyObj.url);
+    const res = await fetch(companyObj.url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return [];
     const data = await res.json();
     const jobs = data.jobs || [];
 
     const matched = [];
     for (const j of jobs) {
-      const title = j.title.toLowerCase();
+      const title = (j.title || "").toLowerCase();
       const location = (j.location?.name || "").toLowerCase();
 
       // Strict Senior/Staff Exclusion
@@ -156,7 +166,7 @@ export async function fetchGreenhouseJobs(companyObj) {
 
 export async function fetchLeverJobs(companyObj) {
   try {
-    const res = await fetch(companyObj.url);
+    const res = await fetch(companyObj.url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return [];
     const jobs = await res.json();
     if (!Array.isArray(jobs)) return [];
@@ -203,10 +213,44 @@ export async function fetchLeverJobs(companyObj) {
   }
 }
 
+export async function fetchJobicyJobs() {
+  try {
+    const res = await fetch("https://jobicy.com/api/v2/remote-jobs?tag=frontend&count=50", { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.jobs || [];
+
+    const matched = [];
+    for (const j of jobs) {
+      const title = (j.jobTitle || "").toLowerCase();
+      const isExcluded = EXCLUDED_KEYWORDS.some((k) => title.includes(k));
+      if (isExcluded) continue;
+
+      const isTech = TECH_KEYWORDS.some((k) => title.includes(k));
+      if (isTech) {
+        matched.push({
+          company: j.companyName || "Tech Company",
+          tier: "growth",
+          role: j.jobTitle,
+          location: j.jobGeo || "Remote",
+          jobUrl: j.url,
+          portalName: "Jobicy",
+          experience: 2,
+          source: "Job Board",
+        });
+      }
+    }
+    return matched;
+  } catch {
+    return [];
+  }
+}
+
 export async function discoverLiveJobs() {
   console.log("🔍 Scanning for Junior / SDE-1 / Frontend roles (<= 2 years experience)...");
   const allJobs = [];
 
+  // 1. Direct ATS Greenhouse & Lever
   for (const company of TARGET_COMPANIES) {
     let jobs = [];
     if (company.portal === "Greenhouse") {
@@ -218,6 +262,13 @@ export async function discoverLiveJobs() {
       console.log(`✅ Found ${jobs.length} opening(s) at ${company.company}`);
       allJobs.push(...jobs);
     }
+  }
+
+  // 2. Curated Global / Remote Job Feeds (Jobicy)
+  const jobicyJobs = await fetchJobicyJobs();
+  if (jobicyJobs.length > 0) {
+    console.log(`✅ Found ${jobicyJobs.length} opening(s) on Jobicy`);
+    allJobs.push(...jobicyJobs);
   }
 
   return allJobs;
@@ -237,17 +288,4 @@ I'm very excited about ${job.company}'s mission and would love to bring my front
 Looking forward to connecting!
 Portfolio: ${profile.personal?.portfolio || "https://vivek-kumar.dev"} | LinkedIn: ${profile.personal?.linkedin}
 Target CTC: ${salary} (Immediate joiner, <= 15 days)`;
-}
-
-// CLI execution
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
-  const jobs = await discoverLiveJobs();
-  console.log(`\n🎯 Total Target Roles Discovered (<= 2 YOE): ${jobs.length}\n`);
-  
-  jobs.slice(0, 10).forEach((j, i) => {
-    console.log(`${i + 1}. [${j.company}] ${j.role} (${j.tier || "tech"})`);
-    console.log(`   📍 ${j.location} | Experience: ${j.experience} yrs max`);
-    console.log(`   🔗 ${j.jobUrl}\n`);
-  });
 }
