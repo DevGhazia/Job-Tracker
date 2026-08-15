@@ -13,6 +13,7 @@ export const STATUSES = Object.freeze({
     ACCEPTED: "Accepted",
     REJECTED: "Rejected",
     NORESPONSE: "No-Response",
+    DISMISSED: "Dismissed",
 })
 
 export const LOCATIONS = Object.freeze({

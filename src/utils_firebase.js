@@ -45,47 +45,51 @@ export const dismissApplication = async (app) => {
     const user = auth.currentUser;
     if (!user || !app) return;
 
-    const batch = writeBatch(db);
-
-    // 1. Record in dismissed_jobs so future job hunts skip same company & role
-    const dismissedRef = doc(collection(db, "users", user.uid, "dismissed_jobs"));
-    batch.set(dismissedRef, {
-        company: app.company || "",
-        role: app.role || "",
-        jobUrl: app.jobUrl || "",
-        dismissedAt: new Date().toISOString(),
-    });
-
-    // 2. Delete from applications
-    const appRef = doc(db, "users", user.uid, "applications", app.id);
-    batch.delete(appRef);
-
-    await batch.commit();
+    try {
+        const ref = doc(db, "users", user.uid, "applications", app.id);
+        await updateDoc(ref, {
+            status: "Dismissed",
+            dismissedAt: new Date().toISOString()
+        });
+    } catch (err) {
+        console.error("Error setting status to Dismissed, deleting doc directly:", err);
+        try {
+            const ref = doc(db, "users", user.uid, "applications", app.id);
+            await deleteDoc(ref);
+        } catch (delErr) {
+            console.error("Direct delete failed:", delErr);
+        }
+    }
 };
 
 export const clearAllQueuedApplications = async (queuedList = []) => {
     const user = auth.currentUser;
     if (!user || queuedList.length === 0) return;
 
-    const batch = writeBatch(db);
-    const now = new Date().toISOString();
+    try {
+        const batch = writeBatch(db);
+        const now = new Date().toISOString();
 
-    for (const app of queuedList) {
-        // Record in dismissed_jobs
-        const dismissedRef = doc(collection(db, "users", user.uid, "dismissed_jobs"));
-        batch.set(dismissedRef, {
-            company: app.company || "",
-            role: app.role || "",
-            jobUrl: app.jobUrl || "",
-            dismissedAt: now,
-        });
+        for (const app of queuedList) {
+            const ref = doc(db, "users", user.uid, "applications", app.id);
+            batch.update(ref, {
+                status: "Dismissed",
+                dismissedAt: now
+            });
+        }
 
-        // Delete from applications
-        const appRef = doc(db, "users", user.uid, "applications", app.id);
-        batch.delete(appRef);
+        await batch.commit();
+    } catch (err) {
+        console.error("Batch clear failed, falling back to individual deletes:", err);
+        for (const app of queuedList) {
+            try {
+                const ref = doc(db, "users", user.uid, "applications", app.id);
+                await deleteDoc(ref);
+            } catch (delErr) {
+                console.error("Delete failed for app:", app.id, delErr);
+            }
+        }
     }
-
-    await batch.commit();
 };
 
 export const updateApplication = async (id, fieldName, fieldValue) => {

@@ -21,7 +21,9 @@ const Dashboard = () => {
 
     // Filter active applied vs queued applications
     const queuedList = companiesList.filter((comp) => comp.status === STATUSES.QUEUED);
-    const activeList = companiesList.filter((comp) => comp.status !== STATUSES.QUEUED);
+    const activeList = companiesList.filter(
+        (comp) => comp.status !== STATUSES.QUEUED && comp.status !== STATUSES.DISMISSED && comp.status !== "Dismissed"
+    );
 
     useEffect(() => {
         if (activeList.length === 0) {
