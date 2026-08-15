@@ -2,8 +2,8 @@ name: Daily Job Discovery
 
 on:
   schedule:
-    # Runs everyday at 15:30 UTC (9:00 PM IST)
-    - cron: '30 15 * * *'
+    # Runs 4 times a day: 9:00 AM, 3:00 PM, 9:00 PM, 3:00 AM IST (03:30, 09:30, 15:30, 21:30 UTC)
+    - cron: '30 3,9,15,21 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 jobs:
