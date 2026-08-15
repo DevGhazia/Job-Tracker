@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { discoverLiveJobs, generateTailoredPitch } from "./job-hunter.mjs";
-import { sendWhatsAppNotification } from "./notifier.mjs";
+import { sendJobAlert } from "./notifier.mjs";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -109,8 +109,8 @@ async function runSearchAndQueue() {
       .slice(0, 5)
       .map((j, idx) => `${idx + 1}. *${j.role}* at *${j.company}* (${j.portalName || j.source})`)
       .join("\n");
-    const waMsg = `⚡ *Job Tracker Alert!*\n\nFound and queued *${queuedCount}* new verified frontend role(s):\n\n${summary}\n\n👉 Review & Apply: https://thejobtracker.vercel.app/`;
-    await sendWhatsAppNotification(waMsg);
+    const alertMsg = `⚡ *Job Tracker Alert!*\n\nFound and queued *${queuedCount}* new verified frontend role(s):\n\n${summary}\n\n👉 Review & Apply: https://thejobtracker.vercel.app/`;
+    await sendJobAlert(alertMsg);
   }
 }
 

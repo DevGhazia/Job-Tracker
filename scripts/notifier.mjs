@@ -20,10 +20,7 @@ export async function sendWhatsAppNotification(message) {
   const phone = getEnvVar("WHATSAPP_PHONE");
   const apikey = getEnvVar("WHATSAPP_APIKEY");
 
-  if (!phone || !apikey) {
-    console.log("ℹ️ WhatsApp notification skipped (WHATSAPP_PHONE or WHATSAPP_APIKEY not set in .env)");
-    return;
-  }
+  if (!phone || !apikey) return;
 
   try {
     const encodedText = encodeURIComponent(message);
@@ -40,4 +37,60 @@ export async function sendWhatsAppNotification(message) {
   } catch (err) {
     console.warn("⚠️ Could not send WhatsApp notification:", err.message);
   }
+}
+
+export async function sendTelegramNotification(message) {
+  const botToken = getEnvVar("TELEGRAM_BOT_TOKEN");
+  const chatId = getEnvVar("TELEGRAM_CHAT_ID");
+
+  if (!botToken || !chatId) return;
+
+  try {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "Markdown"
+      }),
+      signal: AbortSignal.timeout(10000)
+    });
+    if (res.ok) {
+      console.log("✈️ Telegram notification sent successfully!");
+    } else {
+      console.warn("⚠️ Telegram error:", await res.text());
+    }
+  } catch (err) {
+    console.warn("⚠️ Could not send Telegram notification:", err.message);
+  }
+}
+
+export async function sendDiscordNotification(message) {
+  const webhookUrl = getEnvVar("DISCORD_WEBHOOK_URL");
+
+  if (!webhookUrl) return;
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: message }),
+      signal: AbortSignal.timeout(10000)
+    });
+    if (res.ok) {
+      console.log("🎮 Discord notification sent successfully!");
+    }
+  } catch (err) {
+    console.warn("⚠️ Could not send Discord notification:", err.message);
+  }
+}
+
+export async function sendJobAlert(message) {
+  await Promise.allSettled([
+    sendWhatsAppNotification(message),
+    sendTelegramNotification(message),
+    sendDiscordNotification(message)
+  ]);
 }
