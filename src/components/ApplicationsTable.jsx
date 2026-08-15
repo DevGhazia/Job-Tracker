@@ -1,6 +1,6 @@
 import { CiSearch } from "react-icons/ci";
 import { useEffect, useState } from "react";
-import { PiBuildingOfficeDuotone, PiCalendarDotsFill } from "react-icons/pi";
+import { PiCalendarDotsFill } from "react-icons/pi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { GoClockFill } from "react-icons/go";
 import { HiLocationMarker, HiBriefcase } from "react-icons/hi";
@@ -13,6 +13,7 @@ import {
 } from "react-icons/bi";
 import { FaBusinessTime } from "react-icons/fa6";
 import { ACTIONS, formateDate, getDaysPassed, STATUSES, TIMEOUT_PERIOD } from "../constants";
+import CompanyLogo from "./CompanyLogo";
 
 const ApplicationsTable = ({ list, updateList, handleDelete }) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
@@ -125,23 +126,7 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                             {/* --------- LEFT: LOGO | NAME & ROLE -------*/}
                             <div className="row-top">
                                 <div className="cell-logo-container">
-                                    {app.logo ? (
-                                        <img
-                                            src={app.logo}
-                                            alt="company's logo"
-                                            className="cell-logo"
-                                            referrerPolicy="no-referrer"
-                                            onError={(e) => {
-                                                e.currentTarget.onerror = null;
-                                                e.currentTarget.src = `https://unavatar.io/${encodeURIComponent((app.company || '').toLowerCase().replace(/[^a-z0-9]/g, ''))}.com`;
-                                            }}
-                                        />
-                                    ) : (
-                                        <PiBuildingOfficeDuotone
-                                            className="cell-logo"
-                                            style={{ padding: "0.35rem" }}
-                                        />
-                                    )}
+                                    <CompanyLogo logo={app.logo} company={app.company} />
                                 </div>
                                 <div className="cell-name">
                                     <h3>{app.company}</h3>

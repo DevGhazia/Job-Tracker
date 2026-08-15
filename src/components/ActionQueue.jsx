@@ -1,9 +1,9 @@
 import { HiLocationMarker, HiCalendar, HiLightningBolt } from "react-icons/hi";
 import { FaBusinessTime } from "react-icons/fa6";
-import { PiBuildingOfficeDuotone } from "react-icons/pi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiSolidMessageSquareCheck } from "react-icons/bi";
 import { ACTIONS, formateDate } from "../constants";
+import CompanyLogo from "./CompanyLogo";
 
 const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) => {
     if (!queueList || queueList.length === 0) return null;
@@ -64,20 +64,7 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) =>
                         {/* Left: Logo & Company / Role matching ApplicationsTable */}
                         <div className="row-top queue-row-main">
                             <div className="cell-logo-container">
-                                {app.logo ? (
-                                    <img
-                                        src={app.logo}
-                                        alt="logo"
-                                        className="cell-logo"
-                                        referrerPolicy="no-referrer"
-                                        onError={(e) => {
-                                            e.currentTarget.onerror = null;
-                                            e.currentTarget.src = `https://unavatar.io/${encodeURIComponent((app.company || '').toLowerCase().replace(/[^a-z0-9]/g, ''))}.com`;
-                                        }}
-                                    />
-                                ) : (
-                                    <PiBuildingOfficeDuotone className="cell-logo" style={{ padding: "0.35rem" }} />
-                                )}
+                                <CompanyLogo logo={app.logo} company={app.company} />
                             </div>
                             <div className="cell-name">
                                 <div className="queue-row-headline">
