@@ -143,6 +143,92 @@ function isValidTitle(title = "") {
   return TARGET_TECH_KEYWORDS.some(kw => t.includes(kw));
 }
 
+export async function verifyLiveJobPage(url, portalName = "") {
+  try {
+    // 1. Naukri ID Date check
+    if (portalName.toLowerCase().includes("naukri") || url.includes("naukri.com")) {
+      const idMatch = url.match(/(\d{6,})/);
+      if (idMatch) {
+        const digits = idMatch[1];
+        const dd = parseInt(digits.slice(0, 2), 10);
+        const mm = parseInt(digits.slice(2, 4), 10);
+        const yy = parseInt(digits.slice(4, 6), 10);
+        if (dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12) {
+          const postYear = 2000 + yy;
+          const now = new Date();
+          const postDate = new Date(postYear, mm - 1, dd);
+          const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24);
+          if (diffDays > 3 || diffDays < -1) {
+            return { valid: false, reason: `Naukri post is ${Math.round(diffDays)} days old` };
+          }
+        }
+      }
+    }
+
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      },
+      signal: AbortSignal.timeout(6000),
+      redirect: "follow"
+    });
+
+    if (!res.ok) {
+      return { valid: false, reason: `HTTP status ${res.status}` };
+    }
+
+    const html = await res.text();
+    const lower = html.toLowerCase();
+
+    // Check for closed / expired indications
+    const closedIndicators = [
+      "no longer accepting applications",
+      "job is closed",
+      "job has expired",
+      "this job is no longer available",
+      "position has been filled",
+      "this opening has been archived",
+      "this job is inactive",
+      "application is closed",
+      "page not found",
+      "404 not found",
+      "job not found"
+    ];
+
+    for (const ind of closedIndicators) {
+      if (lower.includes(ind)) {
+        return { valid: false, reason: `Job marked as closed/expired ('${ind}')` };
+      }
+    }
+
+    // Check for stale date keywords
+    const staleDateIndicators = [
+      "30+ days ago",
+      "30+ d ago",
+      "1 month ago",
+      "2 months ago",
+      "3 months ago",
+      "4 months ago",
+      "4 weeks ago",
+      "3 weeks ago",
+      "2 weeks ago",
+      "15 days ago",
+      "20 days ago"
+    ];
+
+    for (const ind of staleDateIndicators) {
+      if (lower.includes(ind)) {
+        return { valid: false, reason: `Stale post date ('${ind}')` };
+      }
+    }
+
+    return { valid: true };
+  } catch (err) {
+    return { valid: false, reason: `Fetch error: ${err.message}` };
+  }
+}
+
 // Live LinkedIn Search - Card by card isolation, posted in last 3 days (f_TPR=r259200), deep JD verification
 export async function fetchLinkedInJobs() {
   const queries = [
@@ -187,19 +273,11 @@ export async function fetchLinkedInJobs() {
         if (seenUrls.has(jobUrl)) continue;
         if (!isValidTitle(title)) continue;
 
-        // 1. Try Firecrawl AI Schema Extraction for non-LinkedIn portals (Firecrawl restricts linkedin.com on public proxies)
-        const firecrawlData = !jobUrl.includes("linkedin.com") ? await extractDetailsWithFirecrawl(jobUrl) : null;
-        if (firecrawlData) {
-          if (!firecrawlData.isSuitableFor0To2YOE || (firecrawlData.yearsOfExperienceRequired && firecrawlData.yearsOfExperienceRequired > 2)) {
-            continue;
-          }
-          if (firecrawlData.requiresAWS || firecrawlData.requiresSolidity || firecrawlData.requiresFlutter || firecrawlData.requiresBackend) {
-            continue;
-          }
-        }
-
-        // 2. Fetch direct job description for full-text and experience validation
+        // 1. Fetch direct job description for full-text, recency and closed validation
         let jobDesc = "";
+        let isClosed = false;
+        let postedTimeAgo = "";
+
         const jobIdMatch = jobUrl.match(/(\d+)(?:[^\d]|$)/);
         if (jobIdMatch) {
           try {
@@ -215,23 +293,46 @@ export async function fetchLinkedInJobs() {
               if (descMatch) {
                 jobDesc = descMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
               }
+              const timeMatch = detailHtml.match(/class="posted-time-ago__text[^"]*">([\s\S]*?)<\/span>/i);
+              if (timeMatch) {
+                postedTimeAgo = timeMatch[1].trim().toLowerCase();
+              }
+              if (detailHtml.includes("no longer accepting applications") || detailHtml.includes("closed-job") || detailHtml.includes("is closed")) {
+                isClosed = true;
+              }
+            } else {
+              continue; // If detail page returns 404/410, skip!
             }
           } catch {
-            // Ignore timeout
+            continue; // Skip unverified
+          }
+        }
+
+        if (isClosed) {
+          console.log(`⏩ Skipping closed LinkedIn job: ${title} at ${company}`);
+          continue;
+        }
+
+        // Strict recency check: skip if older than 3 days
+        if (postedTimeAgo) {
+          const staleCheck = ["week", "month", "year", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "11 day", "12 day", "13 day", "14 day", "15 day", "20 day", "30 day"];
+          if (staleCheck.some(s => postedTimeAgo.includes(s))) {
+            console.log(`⏩ Skipping outdated LinkedIn job (${postedTimeAgo}): ${title} at ${company}`);
+            continue;
           }
         }
 
         const fullText = `${title} ${jobDesc}`.toLowerCase();
 
-        // 3. Check strict exclusions in title and description
+        // 2. Check strict exclusions in title and description
         const hasExcluded = STRICT_EXCLUSIONS.some(ex => fullText.includes(ex));
         if (hasExcluded) continue;
 
-        // 4. Check experience requirement
+        // 3. Check experience requirement
         const expCheck = extractExperience(jobDesc);
         if (!expCheck.valid) continue;
 
-        const assignedExp = (firecrawlData && firecrawlData.yearsOfExperienceRequired) ? Math.min(firecrawlData.yearsOfExperienceRequired, 2) : expCheck.exp;
+        const assignedExp = expCheck.exp;
         const clearoutLogo = await fetchClearoutLogo(company);
         const finalLogo = clearoutLogo || logo || null;
 
@@ -403,6 +504,13 @@ export async function fetchMultiPortalJobs() {
 
         const expCheck = extractExperience(desc);
         if (!expCheck.valid) continue;
+
+        // 3. Live Page Verification: check if URL is 200 OK, active, and posted <= 3 days ago
+        const liveCheck = await verifyLiveJobPage(url, portalName);
+        if (!liveCheck.valid) {
+          console.log(`⏩ Skipping dead/outdated job (${liveCheck.reason}): ${role} at ${company}`);
+          continue;
+        }
 
         const clearoutLogo = await fetchClearoutLogo(company);
 
