@@ -353,8 +353,82 @@ export async function fetchLeverJobs(companyObj) {
   }
 }
 
+export async function fetchMultiPortalJobs() {
+  if (!firecrawlClient) return [];
+  const portalSearches = [
+    { portalName: "Y Combinator", query: "site:workatastartup.com/jobs \"Frontend\" React \"India\" OR \"Remote\"" },
+    { portalName: "Wellfound", query: "site:wellfound.com/jobs \"Frontend\" React \"0-2\" OR \"Junior\"" },
+    { portalName: "Instahyre", query: "site:instahyre.com/job \"Frontend\" React \"0-2 years\"" },
+    { portalName: "Naukri", query: "site:naukri.com/job-listings \"Frontend\" React \"0 to 2 years\"" }
+  ];
+
+  const results = [];
+  const seen = new Set();
+
+  for (const { portalName, query } of portalSearches) {
+    try {
+      const res = await firecrawlClient.search(query, { limit: 4 });
+      const items = res?.web || res?.data || [];
+
+      for (const item of items) {
+        const title = item.title || "";
+        const url = (item.url || "").split("?")[0];
+        const desc = item.description || "";
+
+        if (!url || seen.has(url)) continue;
+
+        // Extract company from title patterns like "Role at Company" or "Role - Company - Location"
+        let company = "";
+        let role = title;
+
+        if (title.includes(" at ")) {
+          const parts = title.split(" at ");
+          role = parts[0].trim();
+          company = parts[1].split(/[(\[\-|]/)[0].trim();
+        } else if (title.includes(" - ")) {
+          const parts = title.split(" - ");
+          role = parts[0].trim();
+          company = parts[1].trim();
+        } else if (title.includes(" | ")) {
+          const parts = title.split(" | ");
+          role = parts[0].trim();
+          company = parts[1].trim();
+        }
+
+        if (!company) company = portalName;
+
+        if (!isValidTitle(role)) continue;
+        const fullText = `${role} ${company} ${desc}`.toLowerCase();
+        if (STRICT_EXCLUSIONS.some(ex => fullText.includes(ex))) continue;
+
+        const expCheck = extractExperience(desc);
+        if (!expCheck.valid) continue;
+
+        const clearoutLogo = await fetchClearoutLogo(company);
+
+        seen.add(url);
+        results.push({
+          company,
+          tier: portalName === "Y Combinator" ? "startup" : "growth",
+          role,
+          location: "India / Remote",
+          jobUrl: url,
+          logo: clearoutLogo || null,
+          experience: expCheck.exp,
+          portalName,
+          source: `${portalName} Jobs`
+        });
+      }
+    } catch {
+      // Continue next portal
+    }
+  }
+
+  return results;
+}
+
 export async function discoverLiveJobs() {
-  console.log("🔍 Scanning across LinkedIn and Direct ATS (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
+  console.log("🔍 Scanning across LinkedIn, Direct ATS, Y Combinator, Wellfound, Instahyre & Naukri (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
   const allJobs = [];
 
   // 1. Direct ATS (Greenhouse & Lever)
@@ -376,6 +450,13 @@ export async function discoverLiveJobs() {
   if (linkedInJobs.length > 0) {
     console.log(`✅ [LinkedIn] Found ${linkedInJobs.length} verified 0-2 YOE Frontend opening(s) (posted <= 3 days ago)`);
     allJobs.push(...linkedInJobs);
+  }
+
+  // 3. Multi-Portal Search (Y Combinator, Wellfound, Instahyre, Naukri)
+  const portalJobs = await fetchMultiPortalJobs();
+  if (portalJobs.length > 0) {
+    console.log(`✅ [Multi-Portal] Found ${portalJobs.length} verified opening(s) across YC, Wellfound, Instahyre & Naukri`);
+    allJobs.push(...portalJobs);
   }
 
   return allJobs;
