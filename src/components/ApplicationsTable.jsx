@@ -135,12 +135,7 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                                     )}
                                 </div>
                                 <div className="cell-name">
-                                    <div className="table-row-headline">
-                                        <h3>{app.company}</h3>
-                                        <span className="time-elapsed-tag">
-                                            {getTimeElapsed(app.date, "long")}
-                                        </span>
-                                    </div>
+                                    <h3>{app.company}</h3>
                                     {app.jobUrl ? (
                                         <a
                                             className="cell-name-span job-link"
@@ -158,8 +153,13 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
 
                             {/* ------ RIGHT: PINNED DETAILS + STATUS / DELETE ------ */}
                             <div className="row-right">
-                                {/* ------ LOCATION | EXPERIENCE | DATE ------ */}
+                                {/* ------ TIME ELAPSED | LOCATION | EXPERIENCE | DATE ------ */}
                                 <div className="row-meta">
+                                    <div className="tag-container">
+                                        <GoClockFill className="tag-icon" />
+                                        <span className="time-short">{getTimeElapsed(app.date, "short")}</span>
+                                        <span className="time-long">{getTimeElapsed(app.date, "long")}</span>
+                                    </div>
                                     <div className="tag-container">
                                         <HiLocationMarker className="tag-icon" />
                                         <span>{app.location}</span>
