@@ -13,6 +13,7 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
         if (p.includes("wellfound") || p.includes("angellist")) return "badge-wellfound";
         if (p.includes("instahyre")) return "badge-instahyre";
         if (p.includes("linkedin")) return "badge-linkedin";
+        if (p.includes("naukri")) return "badge-naukri";
         if (p.includes("cutshort") || p.includes("hirist")) return "badge-cutshort";
         if (p.includes("workday")) return "badge-workday";
         if (p.includes("greenhouse") || p.includes("lever") || p.includes("ashby")) return "badge-ats";

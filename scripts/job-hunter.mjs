@@ -19,6 +19,11 @@ const TARGET_ATS_COMPANIES = [
   { company: "Urban Company", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/urbancompany/jobs" },
   { company: "Supabase", tier: "startup", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/supabase/jobs" },
   { company: "Sentry", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/sentry/jobs" },
+  { company: "GitLab", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs" },
+  { company: "Figma", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/figma/jobs" },
+  { company: "Stripe", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/stripe/jobs" },
+  
+  // Lever boards
   { company: "Vercel", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/vercel?mode=json" },
   { company: "Meesho", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/meesho?mode=json" },
   { company: "Groww", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/groww?mode=json" },
@@ -210,37 +215,58 @@ export async function fetchLeverJobs(companyObj) {
   }
 }
 
-export async function fetchCuratedRemoteJobs() {
-  try {
-    const res = await fetch("https://jobicy.com/api/v2/remote-jobs?tag=react&count=50", { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = data.jobs || [];
+// Live LinkedIn Search
+export async function fetchLinkedInJobs() {
+  const queries = [
+    { q: "frontend developer", loc: "India" },
+    { q: "react developer", loc: "India" }
+  ];
+  const matched = [];
 
-    const matched = [];
-    for (const j of jobs) {
-      const check = isValidJob(j.jobTitle, j.jobDescription || "");
-      if (!check.valid) continue;
-
-      matched.push({
-        company: j.companyName || "Tech Startup",
-        tier: "startup",
-        role: j.jobTitle,
-        location: j.jobGeo || "Remote",
-        jobUrl: j.url,
-        portalName: "Wellfound",
-        experience: 2,
-        source: "Remote Feed",
+  for (const { q, loc } of queries) {
+    try {
+      const url = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r604800&f_E=1%2C2`;
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        signal: AbortSignal.timeout(8000)
       });
+
+      if (!res.ok) continue;
+      const html = await res.text();
+      const jobMatches = [...html.matchAll(/<h3 class="base-search-card__title">([\s\S]*?)<\/h3>[\s\S]*?<h4 class="base-search-card__subtitle">([\s\S]*?)<\/h4>[\s\S]*?<span class="job-search-card__location">([\s\S]*?)<\/span>[\s\S]*?<a class="base-card__full-link[^"]*" href="([^"]+)"/g)];
+
+      for (const m of jobMatches) {
+        const title = m[1].trim();
+        const company = m[2].trim().replace(/<[^>]+>/g, "").trim();
+        const location = m[3].trim();
+        const link = m[4].split("?")[0];
+
+        const check = isValidJob(title, "");
+        if (!check.valid) continue;
+
+        matched.push({
+          company: company,
+          tier: "growth",
+          role: title,
+          location: location || "India",
+          jobUrl: link,
+          portalName: "LinkedIn",
+          experience: 2,
+          source: "LinkedIn Jobs",
+        });
+      }
+    } catch {
+      // Continue next query
     }
-    return matched;
-  } catch {
-    return [];
   }
+
+  return matched;
 }
 
 export async function discoverLiveJobs() {
-  console.log("🔍 Scanning across LinkedIn, Wellfound, Instahyre, Cutshort, and Direct ATS (<= 2 YOE, pure Frontend/React, no AWS/Solidity/Flutter)...");
+  console.log("🔍 Scanning across LinkedIn, Wellfound, Instahyre, Cutshort, and Direct ATS (<= 2 YOE, pure Frontend/React)...");
   const allJobs = [];
 
   // 1. Direct ATS (Greenhouse & Lever)
@@ -252,16 +278,16 @@ export async function discoverLiveJobs() {
       jobs = await fetchLeverJobs(company);
     }
     if (jobs.length > 0) {
-      console.log(`✅ [ATS] Found ${jobs.length} valid 0-2 YOE opening(s) at ${company.company}`);
+      console.log(`✅ [ATS] Found ${jobs.length} valid opening(s) at ${company.company}`);
       allJobs.push(...jobs);
     }
   }
 
-  // 2. Curated Remote & Startup openings (Wellfound / Remote)
-  const remoteJobs = await fetchCuratedRemoteJobs();
-  if (remoteJobs.length > 0) {
-    console.log(`✅ [Curated] Found ${remoteJobs.length} verified 0-2 YOE Frontend opening(s)`);
-    allJobs.push(...remoteJobs);
+  // 2. LinkedIn Live Search
+  const linkedInJobs = await fetchLinkedInJobs();
+  if (linkedInJobs.length > 0) {
+    console.log(`✅ [LinkedIn] Found ${linkedInJobs.length} verified 0-2 YOE Frontend opening(s)`);
+    allJobs.push(...linkedInJobs);
   }
 
   return allJobs;

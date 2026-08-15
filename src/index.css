@@ -1080,6 +1080,12 @@ nav{
   border: 1px solid #bfe0ff;
 }
 
+.badge-naukri {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
 .badge-cutshort {
   background: #f3e8ff;
   color: #6b21a8;
