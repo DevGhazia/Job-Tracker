@@ -49,12 +49,22 @@ const STRICT_EXCLUSIONS = [
 
 import FirecrawlApp from "@mendable/firecrawl-js";
 
-const FIRECRAWL_KEY = process.env.FIRECRAWL_API_KEY || process.env.VITE_FIRECRAWL_API_KEY;
+function getFirecrawlApiKey() {
+  if (process.env.FIRECRAWL_API_KEY) return process.env.FIRECRAWL_API_KEY;
+  if (process.env.VITE_FIRECRAWL_API_KEY) return process.env.VITE_FIRECRAWL_API_KEY;
+  try {
+    const envFile = readFileSync(resolve(rootDir, ".env"), "utf-8");
+    const m = envFile.match(/FIRECRAWL_API_KEY\s*[:=]\s*([^\r\n]+)/);
+    if (m) return m[1].trim();
+  } catch {}
+  return null;
+}
+
+const FIRECRAWL_KEY = getFirecrawlApiKey();
 let firecrawlClient = null;
 if (FIRECRAWL_KEY) {
   try {
     firecrawlClient = new FirecrawlApp({ apiKey: FIRECRAWL_KEY });
-    console.log("🔥 Firecrawl AI scraping active for deep experience extraction!");
   } catch (e) {
     console.warn("Could not initialize Firecrawl:", e.message);
   }
@@ -84,7 +94,7 @@ export async function extractDetailsWithFirecrawl(jobUrl) {
       return scrape.extract;
     }
   } catch (err) {
-    console.warn(`[Firecrawl] Fallback to direct parsing for ${jobUrl}:`, err.message);
+    // Fallback to direct parsing silently
   }
   return null;
 }
