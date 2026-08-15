@@ -176,19 +176,21 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
 
                                 {/* --------- STATUS | DELETE ------- */}
                                 <div className="row-bottom">
-                                    <div className={`select-preicon status-${app.status.toLowerCase()}`}>
-                                        {getStatusIcon(app.status)}
+                                    <div className="status-select-wrapper">
+                                        <div className={`select-preicon status-${app.status.toLowerCase()}`}>
+                                            {getStatusIcon(app.status)}
+                                        </div>
+                                        <select
+                                            className={`basic cell-status status-${app.status.toLowerCase()}`}
+                                            value={app.status}
+                                            name="status"
+                                            onChange={(e) => handleStatusChange(e, app.id)}
+                                        >
+                                            {Object.entries(STATUSES).map(([key, value]) => (
+                                                <option key={key}>{value}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                    <select
-                                        className={`basic cell-status status-${app.status.toLowerCase()}`}
-                                        value={app.status}
-                                        name="status"
-                                        onChange={(e) => handleStatusChange(e, app.id)}
-                                    >
-                                        {Object.entries(STATUSES).map(([key, value]) => (
-                                            <option key={key}>{value}</option>
-                                        ))}
-                                    </select>
                                     <button
                                         className="delete-button"
                                         onClick={() => handleDelete(app.id, ACTIONS.DELETE, app.company)}

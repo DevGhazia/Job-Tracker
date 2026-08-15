@@ -635,14 +635,27 @@ nav{
   display: block;
 }
 
+.status-select-wrapper{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--input-height);
+}
+
 .cell-status{
+  height: var(--input-height);
   border: var(--default-border);
   text-transform: uppercase;
+  font-size: 0.82rem;
   font-weight: 500;
   color: hsl(210 40% 30%);
-  padding-left: 1.75rem;
-  padding-right: 1rem;
-  width: min-content;
+  padding-left: 2rem;
+  padding-right: 1.5rem;
+  width: auto;
+  border-radius: var(--border-radius);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .status-applied{
@@ -693,15 +706,15 @@ nav{
 
 .select-preicon{
   position: absolute;
-  font-size: 1.25rem;
-  height: 1.25px;
-  aspect-ratio: 1/1;
+  font-size: 1.15rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  left: 0.5rem;
+  left: 0.6rem;
   top: 50%;
-  transform: translate(0%, -50%);
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* ------STATITICES------- */
@@ -1181,13 +1194,18 @@ nav{
     justify-content: space-between;
   }
 
+  .status-select-wrapper {
+    flex-grow: 1;
+    display: flex;
+  }
+
   .action-queue-apply-btn {
     flex-grow: 1;
   }
 
   .cell-status {
     flex-grow: 1;
-    width: auto;
+    width: 100%;
   }
 }
 
