@@ -1043,8 +1043,15 @@ nav{
 }
 
 .badge-time {
-  font-size: 0.85rem;
+  background: var(--bg-dark);
   color: var(--text-muted);
+  border: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -1111,7 +1118,7 @@ nav{
 }
 
 .action-queue-apply-btn:hover {
-  transform: scale(1.05);
+  transform: scale(1.025);
   filter: brightness(0.97);
 }
 
