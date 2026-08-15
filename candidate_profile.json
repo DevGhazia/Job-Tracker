@@ -1,0 +1,132 @@
+{
+  "personal": {
+    "firstName": "Vivek",
+    "lastName": "Kumar",
+    "fullName": "Vivek Kumar",
+    "email": "vivkumar15@gmail.com",
+    "alternateEmail": "vkumar@ch.iitr.ac.in",
+    "phone": "+91-9650138045",
+    "currentLocation": "Delhi NCR / India",
+    "linkedin": "https://www.linkedin.com/in/vivek-kumar-frontend/",
+    "github": "https://github.com/DevGhazia",
+    "portfolio": "https://vivek-kumar.dev"
+  },
+  "education": [
+    {
+      "institution": "Indian Institute of Technology, Roorkee (IIT Roorkee)",
+      "degree": "Bachelor of Engineering",
+      "field": "Chemical Engineering",
+      "startYear": "2016",
+      "endYear": "2020",
+      "location": "Uttarakhand, India"
+    }
+  ],
+  "experience": [
+    {
+      "company": "Self-Employed",
+      "role": "Freelance Developer (Interactive Applications)",
+      "startDate": "2023-02",
+      "endDate": "Present",
+      "location": "Remote",
+      "highlights": [
+        "Designed and developed scalable web applications using React, TypeScript, Redux Toolkit, and Firebase, focusing on performance, maintainability, and clean architecture.",
+        "Built a production-style E-commerce platform with dynamic product rendering, cart management, and optimized state handling for seamless user experience.",
+        "Developed a ChatGPT-style AI application with real-time conversational UI and API integration, handling async data flows and responsive rendering.",
+        "Implemented reusable component systems and optimized rendering performance to reduce unnecessary re-renders and improve UI responsiveness.",
+        "Focused on modern frontend best practices, including modular architecture, routing, and responsive design using Tailwind CSS."
+      ]
+    },
+    {
+      "company": "BYJU'S",
+      "role": "Software Engineer (Game Development)",
+      "startDate": "2021-01",
+      "endDate": "2023-01",
+      "location": "Bangalore, India",
+      "highlights": [
+        "Developed and maintained 50+ interactive web-based applications using TypeScript, focusing on performance and user experience.",
+        "Engineered high-performance UI systems with complex animations and real-time state updates, optimized for low-end devices.",
+        "Improved application efficiency by optimizing rendering logic, memory usage, and load times.",
+        "Collaborated with cross-functional teams (designer, product, educators) to deliver intuitive and engaging user interfaces.",
+        "Applied frontend best practices in responsiveness, accessibility, and cross-device compatibility."
+      ]
+    },
+    {
+      "company": "EWar Games",
+      "role": "Game Developer Intern",
+      "startDate": "2020-01",
+      "endDate": "2020-03",
+      "location": "IIT Roorkee, India",
+      "highlights": [
+        "Built a 3D arcade game using C#, focusing on smooth UI/UX and gameplay experience.",
+        "Implemented client-server communication with secure data handling.",
+        "Worked on performance optimization and UI polish for seamless gameplay."
+      ]
+    }
+  ],
+  "skills": {
+    "core": [
+      "React",
+      "TypeScript",
+      "JavaScript",
+      "Redux",
+      "ContextAPI",
+      "React-Flux",
+      "Shadcn/ui",
+      "TailwindCSS",
+      "HTML5",
+      "CSS3"
+    ],
+    "tools": [
+      "VS Code",
+      "Git",
+      "GitHub",
+      "Firebase",
+      "React-Router",
+      "Figma",
+      "Jira",
+      "Unity",
+      "C#"
+    ]
+  },
+  "preferences": {
+    "targetRoles": [
+      "Frontend Engineer",
+      "Software Engineer - Frontend",
+      "React Developer",
+      "UI Engineer",
+      "SDE-1 Frontend",
+      "SDE-2 Frontend"
+    ],
+    "yearsOfExperience": 3,
+    "currentLocation": "Delhi NCR / Bangalore / Remote",
+    "preferredLocations": [
+      "Remote",
+      "Bangalore",
+      "Delhi NCR",
+      "Gurgaon",
+      "Noida",
+      "Hyderabad",
+      "Pune",
+      "US / EU International Remote (USD Contracts)"
+    ],
+    "noticePeriod": "Immediate (<= 15 days)",
+    "salaryStrategy": {
+      "startup": "15 - 18 LPA (₹15,00,000 INR)",
+      "growthTech": "18 - 22 LPA (₹18,00,000 INR)",
+      "enterpriseTech": "20 - 25 LPA (₹20,00,000 INR)",
+      "internationalRemote": "$35,000 - $60,000 USD / year",
+      "default": "15 - 25 LPA (Open to negotiate)"
+    }
+  },
+  "compliance": {
+    "authorizedInIndia": true,
+    "requiresIndiaVisa": false,
+    "openToInternationalRemote": true,
+    "gender": "Male",
+    "veteranStatus": "No",
+    "disabilityStatus": "No"
+  },
+  "achievements": [
+    "BYJU'S TechX Award - Ownership & Accountability, 2022"
+  ]
+}
