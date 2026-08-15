@@ -23,20 +23,6 @@
   ],
   "experience": [
     {
-      "company": "Self-Employed",
-      "role": "Freelance Developer (Interactive Applications)",
-      "startDate": "2023-02",
-      "endDate": "Present",
-      "location": "Remote",
-      "highlights": [
-        "Designed and developed scalable web applications using React, TypeScript, Redux Toolkit, and Firebase, focusing on performance, maintainability, and clean architecture.",
-        "Built a production-style E-commerce platform with dynamic product rendering, cart management, and optimized state handling for seamless user experience.",
-        "Developed a ChatGPT-style AI application with real-time conversational UI and API integration, handling async data flows and responsive rendering.",
-        "Implemented reusable component systems and optimized rendering performance to reduce unnecessary re-renders and improve UI responsiveness.",
-        "Focused on modern frontend best practices, including modular architecture, routing, and responsive design using Tailwind CSS."
-      ]
-    },
-    {
       "company": "BYJU'S",
       "role": "Software Engineer (Game Development)",
       "startDate": "2021-01",
@@ -90,14 +76,20 @@
   },
   "preferences": {
     "targetRoles": [
+      "Junior Frontend Engineer",
       "Frontend Engineer",
       "Software Engineer - Frontend",
       "React Developer",
       "UI Engineer",
-      "SDE-1 Frontend",
-      "SDE-2 Frontend"
+      "SDE-1 Frontend"
     ],
-    "yearsOfExperience": 3,
+    "yearsOfExperience": 2,
+    "maxExperienceRequired": 2,
+    "targetLevels": [
+      "Entry-Level (0-1 yrs)",
+      "Junior (1-2 yrs)",
+      "SDE-1"
+    ],
     "currentLocation": "Delhi NCR / Bangalore / Remote",
     "preferredLocations": [
       "Remote",
@@ -115,7 +107,7 @@
       "growthTech": "18 - 22 LPA (₹18,00,000 INR)",
       "enterpriseTech": "20 - 25 LPA (₹20,00,000 INR)",
       "internationalRemote": "$35,000 - $60,000 USD / year",
-      "default": "15 - 25 LPA (Open to negotiate)"
+      "default": "15 - 20 LPA (Open to negotiate)"
     }
   },
   "compliance": {

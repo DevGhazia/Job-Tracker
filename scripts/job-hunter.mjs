@@ -32,6 +32,7 @@ const TARGET_COMPANIES = [
   { company: "Netlify", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/netlify?mode=json" }
 ];
 
+// Target roles for 0-2 years of experience
 const TECH_KEYWORDS = [
   "frontend",
   "front-end",
@@ -41,11 +42,38 @@ const TECH_KEYWORDS = [
   "ui developer",
   "web developer",
   "software engineer - frontend",
-  "sde-1 frontend",
-  "sde-2 frontend"
+  "software engineer 1",
+  "software engineer - 1",
+  "software engineer i",
+  "sde 1",
+  "sde-1",
+  "sde i",
+  "junior",
+  "associate software engineer",
+  "associate frontend"
 ];
 
+// Strict exclusions for Senior / Staff / Lead / Non-engineering roles
 const EXCLUDED_KEYWORDS = [
+  "senior",
+  "sr.",
+  "sr ",
+  "staff",
+  "principal",
+  "lead",
+  "manager",
+  "director",
+  "architect",
+  "specialist",
+  "intermediate",
+  "iii",
+  "iv",
+  "sde 2",
+  "sde-2",
+  "sde 3",
+  "sde-3",
+  "sde ii",
+  "sde iii",
   "recruiting",
   "recruiter",
   "sales",
@@ -69,7 +97,7 @@ export function getDynamicSalary(companyTier, profile) {
   if (companyTier === "startup") return strategies.startup || "15 - 18 LPA";
   if (companyTier === "growth") return strategies.growthTech || "18 - 22 LPA";
   if (companyTier === "enterprise") return strategies.enterpriseTech || "20 - 25 LPA";
-  return strategies.default || "15 - 25 LPA";
+  return strategies.default || "15 - 20 LPA";
 }
 
 export async function fetchGreenhouseJobs(companyObj) {
@@ -84,6 +112,7 @@ export async function fetchGreenhouseJobs(companyObj) {
       const title = j.title.toLowerCase();
       const location = (j.location?.name || "").toLowerCase();
 
+      // Strict Senior/Staff Exclusion
       const isExcluded = EXCLUDED_KEYWORDS.some((k) => title.includes(k));
       if (isExcluded) continue;
 
@@ -110,7 +139,7 @@ export async function fetchGreenhouseJobs(companyObj) {
           location: j.location?.name || "India (Remote / Hybrid)",
           jobUrl: j.absolute_url,
           portalName: "Greenhouse",
-          experience: title.includes("senior") || title.includes("lead") ? 4 : (title.includes("2") || title.includes("ii") ? 2 : 1),
+          experience: 2, // Maximum 2 years target
           source: "Direct ATS",
         });
       }
@@ -133,6 +162,7 @@ export async function fetchLeverJobs(companyObj) {
       const title = (j.text || "").toLowerCase();
       const location = (j.categories?.location || "").toLowerCase();
 
+      // Strict Senior/Staff Exclusion
       const isExcluded = EXCLUDED_KEYWORDS.some((k) => title.includes(k));
       if (isExcluded) continue;
 
@@ -158,7 +188,7 @@ export async function fetchLeverJobs(companyObj) {
           location: j.categories?.location || "India",
           jobUrl: j.hostedUrl,
           portalName: "Lever",
-          experience: title.includes("senior") || title.includes("lead") ? 4 : 2,
+          experience: 2,
           source: "Direct ATS",
         });
       }
@@ -170,7 +200,7 @@ export async function fetchLeverJobs(companyObj) {
 }
 
 export async function discoverLiveJobs() {
-  console.log("🔍 Scanning top Indian tech & Remote ATS job boards for Frontend / React / UI Engineer roles...");
+  console.log("🔍 Scanning for Junior / SDE-1 / Frontend roles (<= 2 years experience)...");
   const allJobs = [];
 
   for (const company of TARGET_COMPANIES) {
@@ -196,7 +226,7 @@ export function generateTailoredPitch(job, profile) {
 
   return `Hi ${job.company} Hiring Team!
 
-I'm Vivek, a Frontend Engineer with 2+ years of production experience building high-performance web applications using ${skills}. At BYJU'S, I engineered interactive UI systems with real-time state management and optimized rendering logic for 50+ web apps. Recently, I've been building scalable e-commerce and AI-powered conversational web interfaces.
+I'm Vivek, a Frontend Engineer with 2 years of production experience at BYJU'S building high-performance web applications using ${skills}. At BYJU'S, I engineered interactive UI systems with real-time state management and optimized rendering logic for 50+ web apps.
 
 I'm very excited about ${job.company}'s mission and would love to bring my frontend expertise and IIT Roorkee engineering foundation to the ${job.role} team.
 
@@ -209,11 +239,11 @@ Target CTC: ${salary} (Immediate joiner, <= 15 days)`;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
   const jobs = await discoverLiveJobs();
-  console.log(`\n🎯 Total Target Roles Discovered: ${jobs.length}\n`);
+  console.log(`\n🎯 Total Target Roles Discovered (<= 2 YOE): ${jobs.length}\n`);
   
   jobs.slice(0, 10).forEach((j, i) => {
     console.log(`${i + 1}. [${j.company}] ${j.role} (${j.tier || "tech"})`);
-    console.log(`   📍 ${j.location} | Portal: ${j.portalName}`);
+    console.log(`   📍 ${j.location} | Experience: ${j.experience} yrs max`);
     console.log(`   🔗 ${j.jobUrl}\n`);
   });
 }
