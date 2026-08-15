@@ -1,7 +1,9 @@
 import { HiLocationMarker, HiCalendar } from "react-icons/hi";
-import { FaBusinessTime, FaCheck, FaTrash } from "react-icons/fa6";
+import { FaBusinessTime } from "react-icons/fa6";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
-import { formateDate } from "../constants";
+import { RiDeleteBin2Line } from "react-icons/ri";
+import { BiSolidMessageSquareCheck } from "react-icons/bi";
+import { ACTIONS, formateDate } from "../constants";
 
 const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
     if (!queueList || queueList.length === 0) return null;
@@ -43,8 +45,8 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                         onClick={() => handleCardClick(app.jobUrl)}
                         title={app.jobUrl ? `Open ${app.company} application in new tab` : undefined}
                     >
-                        {/* Left: Logo & Company / Role */}
-                        <div className="queue-row-main">
+                        {/* Left: Logo & Company / Role matching ApplicationsTable */}
+                        <div className="row-top queue-row-main">
                             <div className="cell-logo-container">
                                 {app.logo ? (
                                     <img src={app.logo} alt="logo" className="cell-logo" />
@@ -52,7 +54,7 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                                     <PiBuildingOfficeDuotone className="cell-logo" style={{ padding: "0.35rem" }} />
                                 )}
                             </div>
-                            <div className="queue-row-info">
+                            <div className="cell-name">
                                 <div className="queue-row-headline">
                                     <h3>{app.company}</h3>
                                     {app.portalName && (
@@ -61,50 +63,52 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                                         </span>
                                     )}
                                 </div>
-                                <h4 className="queue-role-title">{app.role}</h4>
+                                <span className="cell-name-span">{app.role}</span>
                             </div>
                         </div>
 
-                        {/* Middle: Meta badges (Location, Experience, Date) */}
-                        <div className="queue-row-meta">
-                            <div className="tag-container">
-                                <HiLocationMarker className="tag-icon" />
-                                <span>{app.location || "Remote"}</span>
+                        {/* Right: Meta badges & Actions pinned to the right */}
+                        <div className="queue-row-right">
+                            <div className="row-meta queue-row-meta">
+                                <div className="tag-container">
+                                    <HiLocationMarker className="tag-icon" />
+                                    <span>{app.location || "Remote"}</span>
+                                </div>
+                                <div className="tag-container">
+                                    <FaBusinessTime className="tag-icon" />
+                                    <span>{app.experience !== undefined ? (app.experience === 0 ? "Entry-level" : `${app.experience}+ yrs`) : "0-2 yrs"}</span>
+                                </div>
+                                <div className="tag-container queue-date-tag">
+                                    <HiCalendar className="tag-icon" />
+                                    <span>{formateDate(app.date)}</span>
+                                </div>
                             </div>
-                            <div className="tag-container">
-                                <FaBusinessTime className="tag-icon" />
-                                <span>{app.experience !== undefined ? (app.experience === 0 ? "Entry-level" : `${app.experience}+ yrs`) : "0-2 yrs"}</span>
-                            </div>
-                            <div className="tag-container queue-date-tag">
-                                <HiCalendar className="tag-icon" />
-                                <span>{formateDate(app.date)}</span>
-                            </div>
-                        </div>
 
-                        {/* Right: Actions */}
-                        <div className="queue-row-actions">
-                            <button
-                                type="button"
-                                className="btn-mark-applied"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onMarkApplied(app.id);
-                                }}
-                                title="Mark as Applied"
-                            >
-                                <FaCheck className="btn-icon" /> Mark as Applied
-                            </button>
-                            <button
-                                type="button"
-                                className="btn-dismiss-queue"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete(app.id, app.company);
-                                }}
-                                title="Dismiss from queue"
-                            >
-                                <FaTrash />
-                            </button>
+                            <div className="row-bottom queue-row-actions">
+                                <button
+                                    type="button"
+                                    className="basic cell-status status-applied action-queue-apply-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onMarkApplied(app.id);
+                                    }}
+                                    title="Mark as Applied"
+                                >
+                                    <BiSolidMessageSquareCheck className="apply-btn-icon" />
+                                    <span>Applied</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="delete-button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(app.id, ACTIONS.DELETE, app.company);
+                                    }}
+                                    title="Dismiss from queue"
+                                >
+                                    <RiDeleteBin2Line className="delete-svg" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}

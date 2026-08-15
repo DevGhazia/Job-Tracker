@@ -119,7 +119,7 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                 <div className="table-body">
                     {filteredList.map((app, index) => (
                         <div className="table-row card" key={index}>
-                            {/* --------- LOGO | NAME -------*/}
+                            {/* --------- LEFT: LOGO | NAME & ROLE -------*/}
                             <div className="row-top">
                                 <div className="cell-logo-container">
                                     {app.logo ? (
@@ -146,50 +146,54 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                                         <span className="cell-name-span">{app.role}</span>
                                     )}
                                 </div>
-                                <div className="tag-container">
-                                    <GoClockFill className="tag-icon" />
-                                    <span className="time-short">{getTimeElapsed(app.date, "short")}</span>
-                                    <span className="time-long">{getTimeElapsed(app.date, "long")}</span>
-                                </div>
                             </div>
 
-                            {/* ------ DATE | TIME | LOCATION ------ */}
-                            <div className="row-meta">
-                                <div className="tag-container">
-                                    <FaBusinessTime className="tag-icon" />
-                                    <span>{getRequiredExperience(app.experience)}</span>
+                            {/* ------ RIGHT: PINNED DETAILS + STATUS / DELETE ------ */}
+                            <div className="row-right">
+                                {/* ------ TIME ELAPSED | LOCATION | EXPERIENCE | DATE ------ */}
+                                <div className="row-meta">
+                                    <div className="tag-container">
+                                        <GoClockFill className="tag-icon" />
+                                        <span className="time-short">{getTimeElapsed(app.date, "short")}</span>
+                                        <span className="time-long">{getTimeElapsed(app.date, "long")}</span>
+                                    </div>
+                                    <div className="tag-container">
+                                        <HiLocationMarker className="tag-icon" />
+                                        <span>{app.location}</span>
+                                    </div>
+                                    <div className="tag-container">
+                                        <FaBusinessTime className="tag-icon" />
+                                        <span>{getRequiredExperience(app.experience)}</span>
+                                    </div>
+                                    <div className="tag-container">
+                                        <PiCalendarDotsFill className="tag-icon" />
+                                        <span>{formateDate(app.date)}</span>
+                                    </div>
                                 </div>
-                                <div className="tag-container">
-                                    <HiLocationMarker className="tag-icon" />
-                                    <span>{app.location}</span>
-                                </div>
-                                <div className="tag-container">
-                                    <PiCalendarDotsFill className="tag-icon" />
-                                    <span>{formateDate(app.date)}</span>
-                                </div>
-                            </div>
 
-                            {/* --------- STATUS | DELETE ------- */}
-                            <div className="row-bottom">
-                                <div className={`select-preicon status-${app.status.toLowerCase()}`}>
-                                    {getStatusIcon(app.status)}
+                                {/* --------- STATUS | DELETE ------- */}
+                                <div className="row-bottom">
+                                    <div className={`select-preicon status-${app.status.toLowerCase()}`}>
+                                        {getStatusIcon(app.status)}
+                                    </div>
+                                    <select
+                                        className={`basic cell-status status-${app.status.toLowerCase()}`}
+                                        value={app.status}
+                                        name="status"
+                                        onChange={(e) => handleStatusChange(e, app.id)}
+                                    >
+                                        {Object.entries(STATUSES).map(([key, value]) => (
+                                            <option key={key}>{value}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        className="delete-button"
+                                        onClick={() => handleDelete(app.id, ACTIONS.DELETE, app.company)}
+                                        title="Delete application"
+                                    >
+                                        <RiDeleteBin2Line className="delete-svg" />
+                                    </button>
                                 </div>
-                                <select
-                                    className={`basic cell-status status-${app.status.toLowerCase()}`}
-                                    value={app.status}
-                                    name="status"
-                                    onChange={(e) => handleStatusChange(e, app.id)}
-                                >
-                                    {Object.entries(STATUSES).map(([key, value]) => (
-                                        <option key={key}>{value}</option>
-                                    ))}
-                                </select>
-                                <button
-                                    className="delete-button"
-                                    onClick={() => handleDelete(app.id, ACTIONS.DELETE, app.company)}
-                                >
-                                    <RiDeleteBin2Line className="delete-svg" />
-                                </button>
                             </div>
                         </div>
                     ))}
