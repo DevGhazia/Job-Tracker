@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "hunter": "node scripts/search-and-queue.mjs",
+    "auto-apply": "node scripts/auto-apply.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

@@ -1,0 +1,26 @@
+name: Daily Job Discovery
+
+on:
+  schedule:
+    # Runs everyday at 03:30 UTC (9:00 AM IST)
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  job-discovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Job Hunter & Queue
+        run: node scripts/search-and-queue.mjs
