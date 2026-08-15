@@ -960,13 +960,10 @@ nav{
   background: var(--bg-light);
   border: 1px solid var(--border-muted);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.action-queue-row:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-  border-color: hsl(222 30% 75%);
+.action-queue-row.clickable-row {
+  cursor: pointer;
 }
 
 .queue-row-main {
@@ -1072,27 +1069,6 @@ nav{
   border: 1px solid var(--border);
 }
 
-.btn-apply-portal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  background: #2563eb;
-  color: #ffffff !important;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 0.45rem 0.8rem;
-  border-radius: 6px;
-  text-decoration: none;
-  transition: background 0.15s ease;
-  border: none;
-  white-space: nowrap;
-}
-
-.btn-apply-portal:hover {
-  background: #1d4ed8;
-}
-
 .btn-mark-applied {
   display: inline-flex;
   align-items: center;
@@ -1147,6 +1123,7 @@ nav{
   }
   .queue-row-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
 }
+

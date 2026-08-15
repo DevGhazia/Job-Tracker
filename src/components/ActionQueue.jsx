@@ -1,4 +1,4 @@
-import { HiLocationMarker, HiExternalLink } from "react-icons/hi";
+import { HiLocationMarker, HiCalendar } from "react-icons/hi";
 import { FaBusinessTime, FaCheck, FaTrash, FaBolt } from "react-icons/fa6";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
 import { formateDate } from "../constants";
@@ -15,6 +15,12 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
         if (p.includes("workday")) return "badge-workday";
         if (p.includes("greenhouse") || p.includes("lever") || p.includes("ashby")) return "badge-ats";
         return "badge-default";
+    }
+
+    function handleCardClick(url) {
+        if (url) {
+            window.open(url, "_blank", "noopener,noreferrer");
+        }
     }
 
     return (
@@ -36,7 +42,12 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
 
             <div className="action-queue-list">
                 {queueList.map((app) => (
-                    <div className="action-queue-row card" key={app.id}>
+                    <div
+                        className={`action-queue-row card ${app.jobUrl ? "clickable-row" : ""}`}
+                        key={app.id}
+                        onClick={() => handleCardClick(app.jobUrl)}
+                        title={app.jobUrl ? `Open ${app.company} application in new tab` : undefined}
+                    >
                         {/* Left: Logo & Company / Role */}
                         <div className="queue-row-main">
                             <div className="cell-logo-container">
@@ -70,26 +81,20 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                                 <span>{app.experience !== undefined ? (app.experience === 0 ? "Entry-level" : `${app.experience}+ yrs`) : "0-2 yrs"}</span>
                             </div>
                             <div className="tag-container queue-date-tag">
+                                <HiCalendar className="tag-icon" />
                                 <span>{formateDate(app.date)}</span>
                             </div>
                         </div>
 
                         {/* Right: Actions */}
                         <div className="queue-row-actions">
-                            {app.jobUrl && (
-                                <a
-                                    href={app.jobUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="btn-apply-portal"
-                                >
-                                    Open & Apply <HiExternalLink className="btn-icon" />
-                                </a>
-                            )}
                             <button
                                 type="button"
                                 className="btn-mark-applied"
-                                onClick={() => onMarkApplied(app.id)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkApplied(app.id);
+                                }}
                                 title="Mark as Applied"
                             >
                                 <FaCheck className="btn-icon" /> Mark as Applied
@@ -97,7 +102,10 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                             <button
                                 type="button"
                                 className="btn-dismiss-queue"
-                                onClick={() => onDelete(app.id, app.company)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete(app.id, app.company);
+                                }}
                                 title="Dismiss from queue"
                             >
                                 <FaTrash />
