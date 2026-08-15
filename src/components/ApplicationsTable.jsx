@@ -137,11 +137,10 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                                 <div className="cell-name">
                                     <div className="table-row-headline">
                                         <h3>{app.company}</h3>
-                                        <span className="portal-badge badge-time">
-                                            <GoClockFill className="badge-clock-icon" />
-                                            <span className="time-short">{getTimeElapsed(app.date, "short")}</span>
-                                            <span className="time-long">{getTimeElapsed(app.date, "long")}</span>
-                                        </span>
+                                        <div className="tag-container badge-time">
+                                            <GoClockFill className="tag-icon" />
+                                            <span>{getTimeElapsed(app.date, "short")}</span>
+                                        </div>
                                     </div>
                                     {app.jobUrl ? (
                                         <a

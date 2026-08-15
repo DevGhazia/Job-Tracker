@@ -614,15 +614,18 @@ nav{
   place-items: center;
   cursor: pointer;
   padding: 0;
-  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   box-sizing: border-box;
   flex-shrink: 0;
 }
 
 .delete-button:hover{
-  transform: scale(1.05);
   background-color: #fee2e2;
   border-color: #fca5a5;
+}
+
+.delete-button:hover .delete-svg{
+  color: #b91c1c;
 }
 
 .delete-svg{
@@ -1040,17 +1043,10 @@ nav{
 }
 
 .badge-time {
-  background: var(--bg-dark);
+  font-size: 0.85rem;
   color: var(--text-muted);
-  border: 1px solid var(--border);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.badge-clock-icon {
-  font-size: 0.75rem;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .badge-wellfound {
