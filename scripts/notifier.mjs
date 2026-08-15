@@ -67,30 +67,61 @@ export async function sendTelegramNotification(message) {
   }
 }
 
-export async function sendDiscordNotification(message) {
+export async function sendDiscordNotification(payload) {
   const webhookUrl = getEnvVar("DISCORD_WEBHOOK_URL");
-
   if (!webhookUrl) return;
 
   try {
+    let bodyData = {};
+
+    if (typeof payload === "string") {
+      bodyData = { content: payload };
+    } else if (payload && payload.jobs) {
+      const { jobs = [], count = jobs.length } = payload;
+      const fields = jobs.slice(0, 6).map((j, i) => ({
+        name: `${i + 1}. ${j.role}`,
+        value: `🏢 **${j.company}** • 🌐 ${j.portalName || j.source || 'Direct'} • 📍 ${j.location || 'Remote'}\n[Apply Now](${j.jobUrl})`,
+        inline: false
+      }));
+
+      bodyData = {
+        embeds: [
+          {
+            title: `⚡ ${count} New Verified Job(s) Queued!`,
+            description: `Fresh frontend openings matching your **0–2 YOE profile** (posted $\\le 3$ days ago) have been added to your Action Queue.`,
+            color: 0x3b82f6, // Sleek brand blue
+            fields: fields,
+            url: "https://thejobtracker.vercel.app/",
+            footer: {
+              text: "Job Tracker Autonomous Hunter • 4x Daily Schedule"
+            },
+            timestamp: new Date().toISOString()
+          }
+        ]
+      };
+    } else {
+      bodyData = payload;
+    }
+
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: message }),
+      body: JSON.stringify(bodyData),
       signal: AbortSignal.timeout(10000)
     });
     if (res.ok) {
-      console.log("🎮 Discord notification sent successfully!");
+      console.log("🎮 Discord rich embed notification sent successfully!");
     }
   } catch (err) {
     console.warn("⚠️ Could not send Discord notification:", err.message);
   }
 }
 
-export async function sendJobAlert(message) {
+export async function sendJobAlert(payload) {
+  const textMsg = typeof payload === "string" ? payload : payload.text || "⚡ New jobs queued in Job Tracker!";
   await Promise.allSettled([
-    sendWhatsAppNotification(message),
-    sendTelegramNotification(message),
-    sendDiscordNotification(message)
+    sendWhatsAppNotification(textMsg),
+    sendTelegramNotification(textMsg),
+    sendDiscordNotification(payload)
   ]);
 }

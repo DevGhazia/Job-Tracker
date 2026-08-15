@@ -110,7 +110,11 @@ async function runSearchAndQueue() {
       .map((j, idx) => `${idx + 1}. *${j.role}* at *${j.company}* (${j.portalName || j.source})`)
       .join("\n");
     const alertMsg = `⚡ *Job Tracker Alert!*\n\nFound and queued *${queuedCount}* new verified frontend role(s):\n\n${summary}\n\n👉 Review & Apply: https://thejobtracker.vercel.app/`;
-    await sendJobAlert(alertMsg);
+    await sendJobAlert({
+      count: queuedCount,
+      jobs: newlyQueued,
+      text: alertMsg
+    });
   }
 }
 
