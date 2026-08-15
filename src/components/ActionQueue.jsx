@@ -1,30 +1,9 @@
-import { useState } from "react";
 import { HiLocationMarker, HiCalendar, HiLightningBolt } from "react-icons/hi";
 import { FaBusinessTime } from "react-icons/fa6";
 import { PiBuildingOfficeDuotone } from "react-icons/pi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiSolidMessageSquareCheck } from "react-icons/bi";
 import { ACTIONS, formateDate } from "../constants";
-
-const CompanyLogo = ({ company = "", logo = null }) => {
-    const [imgError, setImgError] = useState(false);
-    const cleanName = (company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const logoSrc = logo || (cleanName ? `https://unavatar.io/${cleanName}.com?fallback=https://logo.clearbit.com/${cleanName}.com` : null);
-
-    if (imgError || !logoSrc) {
-        return <PiBuildingOfficeDuotone className="cell-logo" style={{ padding: "0.35rem" }} />;
-    }
-
-    return (
-        <img
-            src={logoSrc}
-            alt={`${company} logo`}
-            className="cell-logo"
-            loading="lazy"
-            onError={() => setImgError(true)}
-        />
-    );
-};
 
 const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
     if (!queueList || queueList.length === 0) return null;
@@ -73,7 +52,11 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete }) => {
                         {/* Left: Logo & Company / Role matching ApplicationsTable */}
                         <div className="row-top queue-row-main">
                             <div className="cell-logo-container">
-                                <CompanyLogo company={app.company} logo={app.logo} />
+                                {app.logo ? (
+                                    <img src={app.logo} alt="logo" className="cell-logo" />
+                                ) : (
+                                    <PiBuildingOfficeDuotone className="cell-logo" style={{ padding: "0.35rem" }} />
+                                )}
                             </div>
                             <div className="cell-name">
                                 <div className="queue-row-headline">

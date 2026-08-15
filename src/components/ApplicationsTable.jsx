@@ -14,26 +14,6 @@ import {
 import { FaBusinessTime } from "react-icons/fa6";
 import { ACTIONS, formateDate, getDaysPassed, STATUSES, TIMEOUT_PERIOD } from "../constants";
 
-const CompanyLogo = ({ company = "", logo = null }) => {
-    const [imgError, setImgError] = useState(false);
-    const cleanName = (company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const logoSrc = logo || (cleanName ? `https://unavatar.io/${cleanName}.com?fallback=https://logo.clearbit.com/${cleanName}.com` : null);
-
-    if (imgError || !logoSrc) {
-        return <PiBuildingOfficeDuotone className="cell-logo" style={{ padding: "0.35rem" }} />;
-    }
-
-    return (
-        <img
-            src={logoSrc}
-            alt={`${company} logo`}
-            className="cell-logo"
-            loading="lazy"
-            onError={() => setImgError(true)}
-        />
-    );
-};
-
 const ApplicationsTable = ({ list, updateList, handleDelete }) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
     const [searchTerm, setSearchTerm] = useState("");
@@ -145,7 +125,14 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                             {/* --------- LEFT: LOGO | NAME & ROLE -------*/}
                             <div className="row-top">
                                 <div className="cell-logo-container">
-                                    <CompanyLogo company={app.company} logo={app.logo} />
+                                    {app.logo ? (
+                                        <img src={app.logo} alt="company's logo" className="cell-logo" />
+                                    ) : (
+                                        <PiBuildingOfficeDuotone
+                                            className="cell-logo"
+                                            style={{ padding: "0.35rem" }}
+                                        />
+                                    )}
                                 </div>
                                 <div className="cell-name">
                                     <h3>{app.company}</h3>

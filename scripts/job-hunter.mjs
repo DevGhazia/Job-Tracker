@@ -6,9 +6,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
 
-// Curated Direct ATS Boards (Greenhouse, Lever, Ashby) of Top Indian & Remote Tech Companies
+// Curated Direct ATS Boards (Greenhouse, Lever, Ashby)
 const TARGET_ATS_COMPANIES = [
-  // Greenhouse boards
   { company: "Razorpay", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/razorpaysoftwareprivatelimited/jobs" },
   { company: "CRED", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/cred/jobs" },
   { company: "Postman", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/postman/jobs" },
@@ -22,103 +21,29 @@ const TARGET_ATS_COMPANIES = [
   { company: "GitLab", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs" },
   { company: "Figma", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/figma/jobs" },
   { company: "Stripe", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/stripe/jobs" },
-  
-  // Lever boards
-  { company: "Vercel", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/vercel?mode=json" },
   { company: "Meesho", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/meesho?mode=json" },
   { company: "Groww", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/groww?mode=json" },
   { company: "CleverTap", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/clevertap?mode=json" },
   { company: "InVideo", tier: "startup", portal: "Lever", url: "https://api.lever.co/v0/postings/invideo?mode=json" },
 ];
 
-// Target Frontend / React / UI keywords
 const TARGET_TECH_KEYWORDS = [
-  "frontend",
-  "front-end",
-  "front end",
-  "react",
-  "ui engineer",
-  "ui developer",
-  "web developer",
-  "javascript developer",
-  "software engineer - frontend",
-  "software engineer 1",
-  "software engineer - 1",
-  "software engineer i",
-  "sde 1",
-  "sde-1",
-  "sde i",
-  "junior frontend",
-  "junior react",
-  "associate software engineer",
-  "associate frontend",
-  "entry level frontend"
+  "frontend", "front-end", "front end", "react", "ui engineer", "ui developer",
+  "web developer", "javascript developer", "software engineer - frontend",
+  "software engineer 1", "software engineer - 1", "software engineer i",
+  "sde 1", "sde-1", "sde i", "junior frontend", "junior react",
+  "associate software engineer", "associate frontend", "entry level frontend"
 ];
 
-// STRICT EXCLUSIONS: Seniority, High YOE, Non-target skills (AWS, Cloud, DevOps, Solidity, Flutter, React Native, Backend, Fullstack)
+// STRICT EXCLUSIONS: Seniority, High YOE, AWS/Cloud/DevOps/Solidity/Flutter/Backend
 const STRICT_EXCLUSIONS = [
-  // Seniority & High YOE
-  "senior",
-  "sr.",
-  "sr ",
-  "staff",
-  "principal",
-  "lead",
-  "manager",
-  "director",
-  "architect",
-  "intermediate",
-  "sde 2",
-  "sde-2",
-  "sde 3",
-  "sde-3",
-  "sde ii",
-  "sde iii",
-  "iii",
-  "iv",
-  "3+",
-  "4+",
-  "5+",
-  "6+",
-  "3-5",
-  "4-6",
-  "5-7",
-  
-  // Non-target technologies & skill sets
-  "aws",
-  "cloud",
-  "devops",
-  "solidity",
-  "blockchain",
-  "smart contract",
-  "web3",
-  "flutter",
-  "react native",
-  "react-native",
-  "android",
-  "ios",
-  "mobile developer",
-  "backend",
-  "python",
-  "django",
-  "flask",
-  "java ",
-  "spring",
-  "golang",
-  "go developer",
-  "rust developer",
-  "c++",
-  "full stack",
-  "fullstack",
-  "full-stack",
-  "kubernetes",
-  "docker",
-  "terraform",
-  "ci/cd",
-  "qa engineer",
-  "test engineer",
-  "internship",
-  "intern ",
+  "senior", "sr.", "sr ", "staff", "principal", "lead", "manager", "director", "architect",
+  "sde 2", "sde-2", "sde 3", "sde-3", "sde ii", "sde iii",
+  "3+", "4+", "5+", "6+", "7+", "8+", "3-5", "4-6", "5-7", "3 to 5", "4 to 6",
+  "aws", "cloud", "devops", "solidity", "blockchain", "smart contract", "web3",
+  "flutter", "react native", "react-native", "android", "ios", "mobile developer",
+  "backend", "python", "django", "flask", "java ", "spring", "golang", "go developer",
+  "kubernetes", "docker", "terraform", "ci/cd", "full stack", "fullstack", "full-stack",
   "stipend"
 ];
 
@@ -138,23 +63,130 @@ export function getDynamicSalary(companyTier, profile) {
   }
 }
 
-function isValidJob(title = "", content = "") {
-  const fullText = `${title} ${content}`.toLowerCase();
+function extractExperience(text = "") {
+  // Reject high experience
+  const highExpRegex = /(?:3\+|4\+|5\+|6\+|7\+|8\+|3\s*-\s*5|4\s*-\s*6|5\s*-\s*7|3\s*to\s*5|4\s*to\s*6)\s*(?:years?|yrs?|yoe)/i;
+  if (highExpRegex.test(text)) {
+    return { valid: false, exp: 3, reason: "Requires > 2 years experience" };
+  }
 
-  // 1. Must NOT contain any strict exclusion keywords (AWS, Solidity, Flutter, Senior, 3+ years, etc.)
-  for (const excluded of STRICT_EXCLUSIONS) {
-    if (fullText.includes(excluded)) {
-      return { valid: false, reason: `Contains excluded term: "${excluded}"` };
+  // Valid 0-2 YOE patterns
+  const validExpRegex = /(?:0\s*-\s*1|0\s*-\s*2|1\s*-\s*2|0\s*to\s*2|1\s*to\s*2|1\+|2\+|1\s*years?|2\s*years?|fresher|entry[\s-]level|junior)\s*(?:of)?\s*(?:years?|yrs?|yoe|experience)?/i;
+  const match = text.match(validExpRegex);
+  if (match) {
+    if (match[0].includes("0") || match[0].includes("1") || match[0].includes("fresher") || match[0].includes("junior")) {
+      return { valid: true, exp: 1 };
+    }
+    return { valid: true, exp: 2 };
+  }
+
+  return { valid: true, exp: 2 };
+}
+
+function isValidTitle(title = "") {
+  const t = title.toLowerCase();
+  for (const ex of STRICT_EXCLUSIONS) {
+    if (t.includes(ex)) return false;
+  }
+  return TARGET_TECH_KEYWORDS.some(kw => t.includes(kw));
+}
+
+// Live LinkedIn Search - Card by card isolation, posted in last 3 days (f_TPR=r259200), deep JD verification
+export async function fetchLinkedInJobs() {
+  const queries = [
+    { q: "frontend developer", loc: "India" },
+    { q: "react developer", loc: "India" },
+    { q: "ui developer", loc: "India" }
+  ];
+  const acceptedJobs = [];
+  const seenUrls = new Set();
+
+  for (const { q, loc } of queries) {
+    try {
+      // f_TPR=r259200 ensures posted <= 3 days ago, f_E=1,2 filters for entry/associate level
+      const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r259200&f_E=1%2C2`;
+      const res = await fetch(searchUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+
+      if (!res.ok) continue;
+      const html = await res.text();
+      const rawCards = html.split("<li");
+
+      for (let i = 1; i < rawCards.length; i++) {
+        const card = rawCards[i];
+        const titleMatch = card.match(/<h3 class="base-search-card__title">([\s\S]*?)<\/h3>/);
+        const compMatch = card.match(/<h4 class="base-search-card__subtitle">([\s\S]*?)<\/h4>/);
+        const locMatch = card.match(/<span class="job-search-card__location">([\s\S]*?)<\/span>/);
+        const linkMatch = card.match(/<a class="base-card__full-link[^"]*" href="([^"]+)"/);
+        const logoMatch = card.match(/<img class="artdeco-entity-image[^"]*" [^>]*data-delayed-url="([^"]+)"/);
+
+        if (!titleMatch || !compMatch || !linkMatch) continue;
+
+        const title = titleMatch[1].trim();
+        const company = compMatch[1].replace(/<[^>]+>/g, "").trim();
+        const location = locMatch ? locMatch[1].trim() : "India";
+        const jobUrl = linkMatch[1].split("?")[0];
+        const logo = logoMatch ? logoMatch[1].replace(/&amp;/g, "&") : null;
+
+        if (seenUrls.has(jobUrl)) continue;
+        if (!isValidTitle(title)) continue;
+
+        // Fetch job description to strictly verify experience and non-target tech stacks
+        let jobDesc = "";
+        const jobIdMatch = jobUrl.match(/(\d+)(?:[^\d]|$)/);
+        if (jobIdMatch) {
+          try {
+            const detailRes = await fetch(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobIdMatch[1]}`, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              },
+              signal: AbortSignal.timeout(5000)
+            });
+            if (detailRes.ok) {
+              const detailHtml = await detailRes.text();
+              const descMatch = detailHtml.match(/<div class="show-more-less-html__markup[^"]*">([\s\S]*?)<\/div>/);
+              if (descMatch) {
+                jobDesc = descMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+              }
+            }
+          } catch {
+            // Ignore timeout
+          }
+        }
+
+        const fullText = `${title} ${jobDesc}`.toLowerCase();
+
+        // 1. Check strict exclusions in JD
+        const hasExcluded = STRICT_EXCLUSIONS.some(ex => fullText.includes(ex));
+        if (hasExcluded) continue;
+
+        // 2. Check experience requirement
+        const expCheck = extractExperience(jobDesc);
+        if (!expCheck.valid) continue;
+
+        seenUrls.add(jobUrl);
+        acceptedJobs.push({
+          company,
+          tier: "growth",
+          role: title,
+          location,
+          jobUrl,
+          logo,
+          experience: expCheck.exp,
+          portalName: "LinkedIn",
+          source: "LinkedIn Jobs"
+        });
+      }
+    } catch {
+      // Continue next query
     }
   }
 
-  // 2. Must match target Frontend / React role keywords
-  const hasTargetRole = TARGET_TECH_KEYWORDS.some((kw) => title.toLowerCase().includes(kw));
-  if (!hasTargetRole) {
-    return { valid: false, reason: `Title "${title}" does not match target frontend keywords` };
-  }
-
-  return { valid: true };
+  return acceptedJobs;
 }
 
 export async function fetchGreenhouseJobs(companyObj) {
@@ -165,9 +197,19 @@ export async function fetchGreenhouseJobs(companyObj) {
     const jobs = data.jobs || [];
 
     const matched = [];
+    const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+
     for (const j of jobs) {
-      const check = isValidJob(j.title, j.content || "");
-      if (!check.valid) continue;
+      if (j.updated_at && new Date(j.updated_at).getTime() < threeDaysAgo) {
+        continue; // Discard postings older than 3 days
+      }
+
+      if (!isValidTitle(j.title)) continue;
+      const fullText = `${j.title} ${j.content || ""}`.toLowerCase();
+      if (STRICT_EXCLUSIONS.some(ex => fullText.includes(ex))) continue;
+
+      const expCheck = extractExperience(j.content || "");
+      if (!expCheck.valid) continue;
 
       matched.push({
         company: companyObj.company,
@@ -175,8 +217,9 @@ export async function fetchGreenhouseJobs(companyObj) {
         role: j.title,
         location: j.location?.name || "India (Remote / Hybrid)",
         jobUrl: j.absolute_url,
+        logo: null,
         portalName: "Greenhouse",
-        experience: 2,
+        experience: expCheck.exp,
         source: "Direct ATS",
       });
     }
@@ -194,9 +237,19 @@ export async function fetchLeverJobs(companyObj) {
     if (!Array.isArray(jobs)) return [];
 
     const matched = [];
+    const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+
     for (const j of jobs) {
-      const check = isValidJob(j.text, j.descriptionPlain || j.categories?.team || "");
-      if (!check.valid) continue;
+      if (j.createdAt && j.createdAt < threeDaysAgo) {
+        continue; // Discard postings older than 3 days
+      }
+
+      if (!isValidTitle(j.text)) continue;
+      const fullText = `${j.text} ${j.descriptionPlain || ""}`.toLowerCase();
+      if (STRICT_EXCLUSIONS.some(ex => fullText.includes(ex))) continue;
+
+      const expCheck = extractExperience(j.descriptionPlain || "");
+      if (!expCheck.valid) continue;
 
       matched.push({
         company: companyObj.company,
@@ -204,8 +257,9 @@ export async function fetchLeverJobs(companyObj) {
         role: j.text,
         location: j.categories?.location || "India (Remote)",
         jobUrl: j.hostedUrl,
+        logo: null,
         portalName: "Lever",
-        experience: 2,
+        experience: expCheck.exp,
         source: "Direct ATS",
       });
     }
@@ -215,58 +269,8 @@ export async function fetchLeverJobs(companyObj) {
   }
 }
 
-// Live LinkedIn Search
-export async function fetchLinkedInJobs() {
-  const queries = [
-    { q: "frontend developer", loc: "India" },
-    { q: "react developer", loc: "India" }
-  ];
-  const matched = [];
-
-  for (const { q, loc } of queries) {
-    try {
-      const url = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r604800&f_E=1%2C2`;
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        },
-        signal: AbortSignal.timeout(8000)
-      });
-
-      if (!res.ok) continue;
-      const html = await res.text();
-      const jobMatches = [...html.matchAll(/<h3 class="base-search-card__title">([\s\S]*?)<\/h3>[\s\S]*?<h4 class="base-search-card__subtitle">([\s\S]*?)<\/h4>[\s\S]*?<span class="job-search-card__location">([\s\S]*?)<\/span>[\s\S]*?<a class="base-card__full-link[^"]*" href="([^"]+)"/g)];
-
-      for (const m of jobMatches) {
-        const title = m[1].trim();
-        const company = m[2].trim().replace(/<[^>]+>/g, "").trim();
-        const location = m[3].trim();
-        const link = m[4].split("?")[0];
-
-        const check = isValidJob(title, "");
-        if (!check.valid) continue;
-
-        matched.push({
-          company: company,
-          tier: "growth",
-          role: title,
-          location: location || "India",
-          jobUrl: link,
-          portalName: "LinkedIn",
-          experience: 2,
-          source: "LinkedIn Jobs",
-        });
-      }
-    } catch {
-      // Continue next query
-    }
-  }
-
-  return matched;
-}
-
 export async function discoverLiveJobs() {
-  console.log("🔍 Scanning across LinkedIn, Wellfound, Instahyre, Cutshort, and Direct ATS (<= 2 YOE, pure Frontend/React)...");
+  console.log("🔍 Scanning across LinkedIn and Direct ATS (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
   const allJobs = [];
 
   // 1. Direct ATS (Greenhouse & Lever)
@@ -278,7 +282,7 @@ export async function discoverLiveJobs() {
       jobs = await fetchLeverJobs(company);
     }
     if (jobs.length > 0) {
-      console.log(`✅ [ATS] Found ${jobs.length} valid opening(s) at ${company.company}`);
+      console.log(`✅ [ATS] Found ${jobs.length} verified opening(s) at ${company.company}`);
       allJobs.push(...jobs);
     }
   }
@@ -286,7 +290,7 @@ export async function discoverLiveJobs() {
   // 2. LinkedIn Live Search
   const linkedInJobs = await fetchLinkedInJobs();
   if (linkedInJobs.length > 0) {
-    console.log(`✅ [LinkedIn] Found ${linkedInJobs.length} verified 0-2 YOE Frontend opening(s)`);
+    console.log(`✅ [LinkedIn] Found ${linkedInJobs.length} verified 0-2 YOE Frontend opening(s) (posted <= 3 days ago)`);
     allJobs.push(...linkedInJobs);
   }
 
