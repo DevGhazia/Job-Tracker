@@ -168,6 +168,9 @@ export async function fetchLinkedInJobs() {
         const expCheck = extractExperience(jobDesc);
         if (!expCheck.valid) continue;
 
+        const clearoutLogo = await fetchClearoutLogo(company);
+        const finalLogo = clearoutLogo || logo || null;
+
         seenUrls.add(jobUrl);
         acceptedJobs.push({
           company,
@@ -175,7 +178,7 @@ export async function fetchLinkedInJobs() {
           role: title,
           location,
           jobUrl,
-          logo,
+          logo: finalLogo,
           experience: expCheck.exp,
           portalName: "LinkedIn",
           source: "LinkedIn Jobs"
@@ -189,6 +192,21 @@ export async function fetchLinkedInJobs() {
   return acceptedJobs;
 }
 
+export async function fetchClearoutLogo(companyName) {
+  try {
+    const res = await fetch(`https://api.clearout.io/public/companies/autocomplete?query=${encodeURIComponent(companyName)}`, {
+      signal: AbortSignal.timeout(3500)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.data && data.data.length > 0 && data.data[0].logo_url) {
+        return data.data[0].logo_url;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 export async function fetchGreenhouseJobs(companyObj) {
   try {
     const res = await fetch(companyObj.url, { signal: AbortSignal.timeout(6000) });
@@ -198,6 +216,7 @@ export async function fetchGreenhouseJobs(companyObj) {
 
     const matched = [];
     const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+    const clearoutLogo = await fetchClearoutLogo(companyObj.company);
 
     for (const j of jobs) {
       if (j.updated_at && new Date(j.updated_at).getTime() < threeDaysAgo) {
@@ -217,7 +236,7 @@ export async function fetchGreenhouseJobs(companyObj) {
         role: j.title,
         location: j.location?.name || "India (Remote / Hybrid)",
         jobUrl: j.absolute_url,
-        logo: null,
+        logo: clearoutLogo || null,
         portalName: "Greenhouse",
         experience: expCheck.exp,
         source: "Direct ATS",
@@ -238,6 +257,7 @@ export async function fetchLeverJobs(companyObj) {
 
     const matched = [];
     const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+    const clearoutLogo = await fetchClearoutLogo(companyObj.company);
 
     for (const j of jobs) {
       if (j.createdAt && j.createdAt < threeDaysAgo) {
@@ -257,7 +277,7 @@ export async function fetchLeverJobs(companyObj) {
         role: j.text,
         location: j.categories?.location || "India (Remote)",
         jobUrl: j.hostedUrl,
-        logo: null,
+        logo: clearoutLogo || null,
         portalName: "Lever",
         experience: expCheck.exp,
         source: "Direct ATS",

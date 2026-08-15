@@ -126,7 +126,16 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                             <div className="row-top">
                                 <div className="cell-logo-container">
                                     {app.logo ? (
-                                        <img src={app.logo} alt="company's logo" className="cell-logo" />
+                                        <img
+                                            src={app.logo}
+                                            alt="company's logo"
+                                            className="cell-logo"
+                                            referrerPolicy="no-referrer"
+                                            onError={(e) => {
+                                                e.currentTarget.onerror = null;
+                                                e.currentTarget.src = `https://unavatar.io/${encodeURIComponent((app.company || '').toLowerCase().replace(/[^a-z0-9]/g, ''))}.com`;
+                                            }}
+                                        />
                                     ) : (
                                         <PiBuildingOfficeDuotone
                                             className="cell-logo"
