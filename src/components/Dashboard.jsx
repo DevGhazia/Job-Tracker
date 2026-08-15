@@ -83,15 +83,15 @@ const Dashboard = () => {
     return (
         <section className="hero">
             <Statitics list={activeList} stats={statsList} />
-            
-            {/* ⚡ Action Queue for jobs needing manual step-in */}
+            <HeatGraph list={getSortedActiveList()} />
+
+            {/* ⚡ Action Queue positioned below stats and heat map */}
             <ActionQueue
                 queueList={queuedList}
                 onMarkApplied={handleMarkApplied}
                 onDelete={handleDelete}
             />
 
-            <HeatGraph list={getSortedActiveList()} />
             {showModal && (
                 <div className="overlay" onClick={() => setShowModel(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
