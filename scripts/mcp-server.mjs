@@ -49,7 +49,7 @@ function getDb() {
       try {
         creds = typeof raw === "string" ? JSON.parse(raw) : raw;
       } catch {
-        // fallback to embedded serviceAccount
+        // fallback
       }
     }
     initializeApp({ credential: cert(creds) });
@@ -58,31 +58,34 @@ function getDb() {
 }
 
 const DEFAULT_USER_ID = process.env.FIREBASE_MCP_USER_ID || "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
-const STATUSES = ["Applied", "Interviewing", "Accepted", "Rejected", "No-Response"];
+const STATUSES = ["Queued", "Applied", "Interviewing", "Accepted", "Rejected", "No-Response"];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const server = new McpServer({
   name: "job-tracker",
-  version: "1.0.0",
+  version: "1.1.0",
 });
 
-// Tool 1: create_application
+// Tool 1: create_application (Add or queue job)
 server.registerTool(
   "create_application",
   {
-    title: "Create job application",
-    description: "Add a job application to your Job Tracker.",
+    title: "Create or track job application",
+    description: "Add an application (status 'Applied' or 'Queued') to your Job Tracker.",
     inputSchema: {
       company: z.string().trim().min(1).max(200).describe("Company name"),
       role: z.string().trim().min(1).max(200).describe("Job title / role"),
-      location: z.string().trim().min(1).max(200).describe("Location (e.g. Remote, San Francisco, CA)"),
-      experience: z.number().int().min(0).max(80).describe("Required experience in years"),
-      jobUrl: z.string().url().max(2000).optional().describe("Link to the job posting"),
-      status: z.enum(STATUSES).default("Applied").describe("Application status"),
-      date: z.string().regex(DATE_PATTERN, "Use YYYY-MM-DD").describe("Date applied (YYYY-MM-DD)"),
+      location: z.string().trim().min(1).max(200).describe("Location (e.g. Remote, Bangalore, San Francisco)"),
+      experience: z.number().int().min(0).max(80).describe("Required experience in years (0 for entry-level)"),
+      jobUrl: z.string().url().max(2000).optional().describe("Direct application URL"),
+      portalName: z.string().trim().max(100).optional().describe("Portal name (e.g. Wellfound, Instahyre, Workday, LinkedIn, Greenhouse, Lever)"),
+      notes: z.string().max(5000).optional().describe("AI tailored pitch note, cover note, or screening answers"),
+      status: z.enum(STATUSES).default("Applied").describe("Status ('Applied' if already submitted, 'Queued' if needs user step-in)"),
+      date: z.string().regex(DATE_PATTERN, "Use YYYY-MM-DD").optional().describe("Date (YYYY-MM-DD), defaults to today"),
     },
   },
-  async ({ company, role, location, experience, jobUrl, status, date }) => {
+  async ({ company, role, location, experience, jobUrl, portalName, notes, status, date }) => {
+    const today = new Date().toISOString().split("T")[0];
     const application = {
       logo: null,
       company,
@@ -90,8 +93,10 @@ server.registerTool(
       location,
       experience,
       jobUrl: jobUrl ?? "",
+      portalName: portalName ?? "",
+      notes: notes ?? "",
       status: status || "Applied",
-      date,
+      date: date || today,
       didInterview: status === "Interviewing",
     };
 
@@ -105,22 +110,71 @@ server.registerTool(
       content: [
         {
           type: "text",
-          text: `Added ${role} at ${company} to Job Tracker (ID: ${docRef.id}).`,
+          text: `Added ${role} at ${company} [Status: ${application.status}] to Job Tracker (ID: ${docRef.id}).`,
         },
       ],
     };
   }
 );
 
-// Tool 2: list_applications
+// Tool 2: queue_application (Explicit helper to queue jobs needing user action)
+server.registerTool(
+  "queue_application",
+  {
+    title: "Queue job for user action",
+    description: "Queue a discovered job that requires user review, tailored pitch submission, or 1-click confirmation in the Action Queue.",
+    inputSchema: {
+      company: z.string().trim().min(1).max(200).describe("Company name"),
+      role: z.string().trim().min(1).max(200).describe("Job title / role"),
+      location: z.string().trim().min(1).max(200).describe("Location (e.g. Remote, Bangalore, Gurgaon)"),
+      experience: z.number().int().min(0).max(80).describe("Required experience in years"),
+      jobUrl: z.string().url().max(2000).describe("Direct link to open and apply on the portal"),
+      portalName: z.string().trim().min(1).max(100).describe("Portal name (e.g. Wellfound, Instahyre, Workday, Cutshort, LinkedIn)"),
+      notes: z.string().max(5000).optional().describe("AI prepared pitch note or answers to custom application questions"),
+    },
+  },
+  async ({ company, role, location, experience, jobUrl, portalName, notes }) => {
+    const today = new Date().toISOString().split("T")[0];
+    const application = {
+      logo: null,
+      company,
+      role,
+      location,
+      experience,
+      jobUrl,
+      portalName,
+      notes: notes ?? "",
+      status: "Queued",
+      date: today,
+      didInterview: false,
+    };
+
+    const docRef = await getDb()
+      .collection("users")
+      .doc(DEFAULT_USER_ID)
+      .collection("applications")
+      .add(application);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `⚡ Queued "${role} at ${company}" (${portalName}) into your Action Queue (ID: ${docRef.id}). You can open the link and apply with 1 click!`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool 3: list_applications
 server.registerTool(
   "list_applications",
   {
     title: "List job applications",
-    description: "List recent job applications from your Job Tracker.",
+    description: "List job applications from your Job Tracker, optionally filtered by status ('Queued', 'Applied', 'Interviewing', etc.).",
     inputSchema: {
-      limit: z.number().int().min(1).max(100).default(20).optional().describe("Maximum number of applications to retrieve"),
-      status: z.enum(STATUSES).optional().describe("Filter by status"),
+      limit: z.number().int().min(1).max(100).default(20).optional().describe("Maximum number of applications"),
+      status: z.enum(STATUSES).optional().describe("Filter by status (e.g. 'Queued', 'Applied', 'Interviewing')"),
     },
   },
   async ({ limit = 20, status }) => {
@@ -136,14 +190,14 @@ server.registerTool(
 
     if (applications.length === 0) {
       return {
-        content: [{ type: "text", text: "No job applications found matching the criteria." }],
+        content: [{ type: "text", text: `No job applications found${status ? ` with status "${status}"` : ""}.` }],
       };
     }
 
     const summary = applications
       .map(
         (app, idx) =>
-          `${idx + 1}. **${app.role}** at **${app.company}** [${app.status}]\n   - Location: ${app.location} | Date: ${app.date}${app.jobUrl ? `\n   - URL: ${app.jobUrl}` : ""}`
+          `${idx + 1}. **${app.role}** at **${app.company}** [${app.status}] | ${app.location} | Date: ${app.date}${app.portalName ? ` | Portal: ${app.portalName}` : ""}${app.jobUrl ? `\n   - Link: ${app.jobUrl}` : ""}${app.notes ? `\n   - Notes: ${app.notes.slice(0, 100)}...` : ""}`
       )
       .join("\n\n");
 
@@ -158,12 +212,12 @@ server.registerTool(
   }
 );
 
-// Tool 3: update_application_status
+// Tool 4: update_application_status
 server.registerTool(
   "update_application_status",
   {
     title: "Update application status",
-    description: "Update the status of an existing job application.",
+    description: "Update the status of an existing job application (e.g. 'Queued' -> 'Applied' -> 'Interviewing').",
     inputSchema: {
       id: z.string().trim().min(1).describe("The application Document ID"),
       status: z.enum(STATUSES).describe("The new status"),
@@ -178,10 +232,15 @@ server.registerTool(
       };
     }
 
-    await docRef.update({
+    const updates = {
       status,
       didInterview: status === "Interviewing" ? true : doc.data().didInterview || false,
-    });
+    };
+    if (status === "Applied" && doc.data().status === "Queued") {
+      updates.date = new Date().toISOString().split("T")[0];
+    }
+
+    await docRef.update(updates);
 
     return {
       content: [
@@ -194,7 +253,7 @@ server.registerTool(
   }
 );
 
-// Tool 4: delete_application
+// Tool 5: delete_application
 server.registerTool(
   "delete_application",
   {
@@ -225,18 +284,19 @@ server.registerTool(
   }
 );
 
-// Tool 5: get_application_stats
+// Tool 6: get_application_stats
 server.registerTool(
   "get_application_stats",
   {
     title: "Get application statistics",
-    description: "Get statistical overview of your tracked job applications.",
+    description: "Get statistical overview of your tracked job applications and pending action queue.",
     inputSchema: {},
   },
   async () => {
     const snapshot = await getDb().collection("users").doc(DEFAULT_USER_ID).collection("applications").get();
     const stats = {
       Total: snapshot.size,
+      Queued: 0,
       Applied: 0,
       Interviewing: 0,
       Accepted: 0,
@@ -254,6 +314,7 @@ server.registerTool(
     const report = [
       `📊 **Job Tracker Summary:**`,
       `- Total Tracked: ${stats.Total}`,
+      `- ⚡ Action Queue (Pending): ${stats.Queued}`,
       `- Applied: ${stats.Applied}`,
       `- Interviewing: ${stats.Interviewing}`,
       `- Accepted: ${stats.Accepted}`,

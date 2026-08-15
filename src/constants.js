@@ -7,6 +7,7 @@ export const ROLES = Object.freeze({
 })
 
 export const STATUSES = Object.freeze({
+    QUEUED: "Queued",
     APPLIED: "Applied", 
     INTERVIEWING: "Interviewing",
     ACCEPTED: "Accepted",
