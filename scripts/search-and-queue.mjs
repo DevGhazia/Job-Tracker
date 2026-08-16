@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { discoverLiveJobs, generateTailoredPitch } from "./job-hunter.mjs";
-import { sendJobAlert } from "./notifier.mjs";
+import { sendJobAlert, sendDiscordNotification } from "./notifier.mjs";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -114,6 +114,23 @@ async function runSearchAndQueue() {
       count: queuedCount,
       jobs: newlyQueued,
       text: alertMsg
+    });
+  } else {
+    const timeString = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+    const dateString = new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", day: "numeric" });
+    
+    await sendDiscordNotification({
+      embeds: [
+        {
+          title: `🟢 Discovery Scan Complete (${timeString} IST)`,
+          description: `Scanned **LinkedIn, Direct ATS (Greenhouse/Lever), Y Combinator, Wellfound, Instahyre & Naukri**.\n\nAll verified $\\le 2$ YOE frontend openings are already up-to-date in your tracker. No new postings right now.`,
+          color: 0x10b981,
+          footer: {
+            text: `Job Tracker Autonomous Hunter • ${dateString} • Next scan in ~4 hrs`
+          },
+          url: "https://thejobtracker.vercel.app/"
+        }
+      ]
     });
   }
 }
