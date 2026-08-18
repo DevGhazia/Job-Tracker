@@ -35,16 +35,16 @@ const TARGET_TECH_KEYWORDS = [
   "associate software engineer", "associate frontend", "entry level frontend"
 ];
 
-// STRICT EXCLUSIONS: Seniority, High YOE, AWS/Cloud/DevOps/Solidity/Flutter/Backend
-const STRICT_EXCLUSIONS = [
+// TITLE EXCLUSIONS: Seniority, High YOE, purely non-frontend titles
+const TITLE_EXCLUSIONS = [
   "senior", "sr.", "sr ", "staff", "principal", "lead", "manager", "director", "architect",
-  "sde 2", "sde-2", "sde 3", "sde-3", "sde ii", "sde iii",
+  "sde 2", "sde-2", "sde 3", "sde-3", "sde ii", "sde iii", "team lead", "head of",
   "3+", "4+", "5+", "6+", "7+", "8+", "3-5", "4-6", "5-7", "3 to 5", "4 to 6",
-  "aws", "cloud", "devops", "solidity", "blockchain", "smart contract", "web3",
-  "flutter", "react native", "react-native", "android", "ios", "mobile developer",
-  "backend", "python", "django", "flask", "java ", "spring", "golang", "go developer",
-  "kubernetes", "docker", "terraform", "ci/cd", "full stack", "fullstack", "full-stack",
-  "stipend"
+  "backend", "back-end", "back end", "python developer", "java developer", "golang", "go developer",
+  "django developer", "flask developer", "spring boot", "solidity", "blockchain", "smart contract", "web3",
+  "flutter", "react native", "react-native", "android", "ios", "mobile developer", "mobile engineer",
+  "devops", "cloud engineer", "qa engineer", "qa automation", "test engineer", "data engineer", "data scientist", "machine learning",
+  "stipend", "unpaid"
 ];
 
 import FirecrawlApp from "@mendable/firecrawl-js";
@@ -81,10 +81,8 @@ export async function extractDetailsWithFirecrawl(jobUrl) {
           properties: {
             yearsOfExperienceRequired: { type: "number", description: "Required years of experience" },
             isSuitableFor0To2YOE: { type: "boolean", description: "True if role is suitable for 0-2 years experience" },
-            requiresAWS: { type: "boolean", description: "True if strictly requires AWS or DevOps" },
-            requiresSolidity: { type: "boolean", description: "True if requires Solidity or Blockchain" },
-            requiresFlutter: { type: "boolean", description: "True if requires Flutter" },
-            requiresBackend: { type: "boolean", description: "True if primarily a backend or fullstack role" }
+            isBackendStrictlyMandatory: { type: "boolean", description: "True if backend or DevOps is a strictly required core responsibility, False if only nice-to-have" },
+            requiresFlutterOrMobile: { type: "boolean", description: "True if requires Flutter/iOS/Android mobile development" }
           },
           required: ["yearsOfExperienceRequired", "isSuitableFor0To2YOE"]
         }
@@ -115,6 +113,32 @@ export function getDynamicSalary(companyTier, profile) {
   }
 }
 
+/**
+ * Checks if backend/DevOps is a strict mandatory core requirement.
+ * If backend/AWS/Docker is only in "Nice to have" or mentioned in passing, returns false (allowed).
+ */
+export function isStrictlyBackendOnly(text = "") {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+
+  // If the job explicitly states looking for a backend/devops developer
+  if (/looking for a (?:backend|server-side|devops|mobile)\s+(?:engineer|developer)/i.test(lower)) {
+    return true;
+  }
+
+  // Split into required vs nice-to-have sections if present
+  const niceToHaveIdx = lower.search(/(?:nice to have|good to have|bonus|preferred|optional|plus points|not required|pluses)/i);
+  const requiredText = niceToHaveIdx !== -1 ? lower.slice(0, niceToHaveIdx) : lower;
+
+  // Check for mandatory backend requirements in the required section
+  const mandatoryBackendRegex = /(?:must have|requirements|mandatory|required qualifications|essential)[\s\S]{0,250}(?:strong|deep|hands-on|proven|extensive)\s+(?:experience with|knowledge of)?\s*(?:backend|python|django|java|spring|golang|solidity|devops|kubernetes)/i;
+  if (mandatoryBackendRegex.test(requiredText)) {
+    return true;
+  }
+
+  return false;
+}
+
 function extractExperience(text = "") {
   // Reject high experience
   const highExpRegex = /(?:3\+|4\+|5\+|6\+|7\+|8\+|3\s*-\s*5|4\s*-\s*6|5\s*-\s*7|3\s*to\s*5|4\s*to\s*6)\s*(?:years?|yrs?|yoe)/i;
@@ -137,7 +161,7 @@ function extractExperience(text = "") {
 
 function isValidTitle(title = "") {
   const t = title.toLowerCase();
-  for (const ex of STRICT_EXCLUSIONS) {
+  for (const ex of TITLE_EXCLUSIONS) {
     if (t.includes(ex)) return false;
   }
   return TARGET_TECH_KEYWORDS.some(kw => t.includes(kw));
@@ -175,6 +199,10 @@ export async function verifyLiveJobPage(url, portalName = "") {
     });
 
     if (!res.ok) {
+      if (res.status === 403 || res.status === 429) {
+        // Portal bot protection (e.g. Cloudflare on Naukri/Wellfound) -> retain as active
+        return { valid: true, note: `Status ${res.status} bot-protection preserved` };
+      }
       return { valid: false, reason: `HTTP status ${res.status}` };
     }
 
@@ -225,11 +253,11 @@ export async function verifyLiveJobPage(url, portalName = "") {
 
     return { valid: true };
   } catch (err) {
-    return { valid: false, reason: `Fetch error: ${err.message}` };
+    return { valid: true, note: `Network validation bypassed: ${err.message}` };
   }
 }
 
-// Live LinkedIn Search - Card by card isolation, posted in last 3 days (f_TPR=r259200), deep JD verification
+// Live LinkedIn Search - Card by card isolation, posted in last 3 days (f_TPR=r259200), deep JD verification with fast fallback
 export async function fetchLinkedInJobs() {
   const queries = [
     { q: "frontend developer", loc: "India" },
@@ -277,6 +305,7 @@ export async function fetchLinkedInJobs() {
         let jobDesc = "";
         let isClosed = false;
         let postedTimeAgo = "";
+        let isFallback = false;
 
         const jobIdMatch = jobUrl.match(/(\d+)(?:[^\d]|$)/);
         if (jobIdMatch) {
@@ -301,11 +330,14 @@ export async function fetchLinkedInJobs() {
                 isClosed = true;
               }
             } else {
-              continue; // If detail page returns 404/410, skip!
+              // Rate limited or anti-bot on cloud runner -> activate Fast Fallback
+              isFallback = true;
             }
           } catch {
-            continue; // Skip unverified
+            isFallback = true;
           }
+        } else {
+          isFallback = true;
         }
 
         if (isClosed) {
@@ -322,17 +354,22 @@ export async function fetchLinkedInJobs() {
           }
         }
 
-        const fullText = `${title} ${jobDesc}`.toLowerCase();
+        // Check if backend is strictly mandatory in the description
+        if (jobDesc && isStrictlyBackendOnly(jobDesc)) {
+          console.log(`⏩ Skipping backend-mandatory role: ${title} at ${company}`);
+          continue;
+        }
 
-        // 2. Check strict exclusions in title and description
-        const hasExcluded = STRICT_EXCLUSIONS.some(ex => fullText.includes(ex));
-        if (hasExcluded) continue;
+        let assignedExp = 1;
+        if (jobDesc) {
+          const expCheck = extractExperience(jobDesc);
+          if (!expCheck.valid) {
+            console.log(`⏩ Skipping high experience role: ${title} at ${company}`);
+            continue;
+          }
+          assignedExp = expCheck.exp;
+        }
 
-        // 3. Check experience requirement
-        const expCheck = extractExperience(jobDesc);
-        if (!expCheck.valid) continue;
-
-        const assignedExp = expCheck.exp;
         const clearoutLogo = await fetchClearoutLogo(company);
         const finalLogo = clearoutLogo || logo || null;
 
@@ -346,7 +383,8 @@ export async function fetchLinkedInJobs() {
           logo: finalLogo,
           experience: assignedExp,
           portalName: "LinkedIn",
-          source: "LinkedIn Jobs"
+          source: isFallback ? "LinkedIn Jobs (Fast Fallback)" : "LinkedIn Jobs",
+          isFallback
         });
       }
     } catch {
@@ -389,8 +427,7 @@ export async function fetchGreenhouseJobs(companyObj) {
       }
 
       if (!isValidTitle(j.title)) continue;
-      const fullText = `${j.title} ${j.content || ""}`.toLowerCase();
-      if (STRICT_EXCLUSIONS.some(ex => fullText.includes(ex))) continue;
+      if (isStrictlyBackendOnly(j.content || "")) continue;
 
       const expCheck = extractExperience(j.content || "");
       if (!expCheck.valid) continue;
@@ -430,8 +467,7 @@ export async function fetchLeverJobs(companyObj) {
       }
 
       if (!isValidTitle(j.text)) continue;
-      const fullText = `${j.text} ${j.descriptionPlain || ""}`.toLowerCase();
-      if (STRICT_EXCLUSIONS.some(ex => fullText.includes(ex))) continue;
+      if (isStrictlyBackendOnly(j.descriptionPlain || "")) continue;
 
       const expCheck = extractExperience(j.descriptionPlain || "");
       if (!expCheck.valid) continue;
@@ -457,10 +493,13 @@ export async function fetchLeverJobs(companyObj) {
 export async function fetchMultiPortalJobs() {
   if (!firecrawlClient) return [];
   const portalSearches = [
-    { portalName: "Y Combinator", query: "site:workatastartup.com/jobs \"Frontend\" React \"India\" OR \"Remote\"" },
-    { portalName: "Wellfound", query: "site:wellfound.com/jobs \"Frontend\" React \"0-2\" OR \"Junior\"" },
-    { portalName: "Instahyre", query: "site:instahyre.com/job \"Frontend\" React \"0-2 years\"" },
-    { portalName: "Naukri", query: "site:naukri.com/job-listings \"Frontend\" React \"0 to 2 years\"" }
+    { portalName: "Greenhouse Direct", query: "site:boards.greenhouse.io \"Frontend\" (React OR TypeScript) \"India\"" },
+    { portalName: "Lever Direct", query: "site:jobs.lever.co \"Frontend\" (React OR TypeScript) \"India\"" },
+    { portalName: "Ashby Direct", query: "site:jobs.ashbyhq.com \"Frontend\" (React OR TypeScript) \"India\"" },
+    { portalName: "Y Combinator", query: "site:workatastartup.com/jobs \"Frontend\" React" },
+    { portalName: "Wellfound", query: "site:wellfound.com/jobs \"Frontend\" React" },
+    { portalName: "Instahyre", query: "site:instahyre.com/job \"Frontend\" React" },
+    { portalName: "Naukri", query: "site:naukri.com/job-listings \"Frontend Developer\" React" }
   ];
 
   const results = [];
@@ -468,7 +507,7 @@ export async function fetchMultiPortalJobs() {
 
   for (const { portalName, query } of portalSearches) {
     try {
-      const res = await firecrawlClient.search(query, { limit: 4 });
+      const res = await firecrawlClient.search(query, { limit: 5 });
       const items = res?.web || res?.data || [];
 
       for (const item of items) {
@@ -499,13 +538,12 @@ export async function fetchMultiPortalJobs() {
         if (!company) company = portalName;
 
         if (!isValidTitle(role)) continue;
-        const fullText = `${role} ${company} ${desc}`.toLowerCase();
-        if (STRICT_EXCLUSIONS.some(ex => fullText.includes(ex))) continue;
+        if (isStrictlyBackendOnly(desc)) continue;
 
         const expCheck = extractExperience(desc);
         if (!expCheck.valid) continue;
 
-        // 3. Live Page Verification: check if URL is 200 OK, active, and posted <= 3 days ago
+        // Live Page Verification
         const liveCheck = await verifyLiveJobPage(url, portalName);
         if (!liveCheck.valid) {
           console.log(`⏩ Skipping dead/outdated job (${liveCheck.reason}): ${role} at ${company}`);

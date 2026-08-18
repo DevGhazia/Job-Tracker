@@ -78,17 +78,25 @@ export async function sendDiscordNotification(payload) {
       bodyData = { content: payload };
     } else if (payload && payload.jobs) {
       const { jobs = [], count = jobs.length } = payload;
-      const fields = jobs.slice(0, 6).map((j, i) => ({
-        name: `${i + 1}. ${j.role}`,
-        value: `🏢 **${j.company}** • 🌐 ${j.portalName || j.source || 'Direct'} • 📍 ${j.location || 'Remote'}\n[Apply Now](${j.jobUrl})`,
-        inline: false
-      }));
+      const hasFallbacks = jobs.some(j => j.isFallback);
+      const fields = jobs.slice(0, 6).map((j, i) => {
+        const fallbackBadge = j.isFallback ? " • 🛡️ *Fast Fallback*" : "";
+        return {
+          name: `${i + 1}. ${j.role}`,
+          value: `🏢 **${j.company}** • 🌐 ${j.portalName || j.source || 'Direct'}${fallbackBadge} • 📍 ${j.location || 'Remote'}\n[Apply Now](${j.jobUrl})`,
+          inline: false
+        };
+      });
+
+      const fallbackNote = hasFallbacks
+        ? "\n\n🛡️ *Note: Some listings were preserved via Fast-Card Fallback due to portal rate-limiting.*"
+        : "";
 
       bodyData = {
         embeds: [
           {
             title: `⚡ ${count} New Verified Job(s) Queued!`,
-            description: `Fresh frontend openings matching your **0–2 YOE profile** (posted $\\le 3$ days ago) have been added to your Action Queue.`,
+            description: `Fresh frontend openings matching your **0–2 YOE profile** (posted $\\le 3$ days ago) have been added to your Action Queue.${fallbackNote}`,
             color: 0x3b82f6, // Sleek brand blue
             fields: fields,
             url: "https://thejobtracker.vercel.app/",
