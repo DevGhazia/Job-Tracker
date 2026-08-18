@@ -170,6 +170,154 @@ export async function fillLeverApplication(page, profile, resumePath) {
   }
 }
 
+export async function fillWorkableApplication(page, profile, resumePath) {
+  console.log("📝 Autofilling Workable application form...");
+
+  // Dismiss cookie consent banner if present
+  try {
+    const cookieBtn = page.locator("button:has-text('Accept all'), button:has-text('Decline all')");
+    if (await cookieBtn.count() > 0) {
+      await cookieBtn.first().click({ timeout: 3000 });
+      await page.waitForTimeout(500);
+    }
+  } catch {}
+
+  // First name
+  const firstNames = ["input[name='firstname']", "input[data-ui='firstname']", "#firstname"];
+  for (const s of firstNames) {
+    if (await page.locator(s).count() > 0) {
+      await page.locator(s).first().fill(profile.personal.firstName);
+      break;
+    }
+  }
+
+  // Last name
+  const lastNames = ["input[name='lastname']", "input[data-ui='lastname']", "#lastname"];
+  for (const s of lastNames) {
+    if (await page.locator(s).count() > 0) {
+      await page.locator(s).first().fill(profile.personal.lastName);
+      break;
+    }
+  }
+
+  // Email
+  const emails = ["input[name='email']", "input[type='email']", "input[data-ui='email']", "#email"];
+  for (const s of emails) {
+    if (await page.locator(s).count() > 0) {
+      await page.locator(s).first().fill(profile.personal.email);
+      break;
+    }
+  }
+
+  // Headline
+  const headlines = ["input[name='headline']", "input[data-ui='headline']", "#headline"];
+  for (const s of headlines) {
+    if (await page.locator(s).count() > 0) {
+      await page.locator(s).first().fill("Frontend Engineer | React | TypeScript (IIT Roorkee, 2 YOE ex-BYJU'S)");
+      break;
+    }
+  }
+
+  // Phone
+  const phones = ["input[type='tel']", "input[name='phone']"];
+  for (const s of phones) {
+    if (await page.locator(s).count() > 0) {
+      const cleanPhone = profile.personal.phone.replace(/[^0-9]/g, "").slice(-10);
+      await page.locator(s).first().fill(cleanPhone);
+      break;
+    }
+  }
+
+  // Address
+  const addresses = ["input[name='address']", "input[data-ui='address']", "#address"];
+  for (const s of addresses) {
+    if (await page.locator(s).count() > 0) {
+      await page.locator(s).first().fill(profile.personal.currentLocation || "Delhi NCR, India");
+      break;
+    }
+  }
+
+  // Summary
+  const summaries = ["textarea[name='summary']", "textarea[data-ui='summary']", "#summary"];
+  for (const s of summaries) {
+    if (await page.locator(s).count() > 0) {
+      await page.locator(s).first().fill("Frontend Engineer with 2 years of production experience at BYJU'S building high-performance web applications using React, TypeScript, Redux, and modern UI architectures. IIT Roorkee engineering graduate.");
+      break;
+    }
+  }
+
+  // Cover Letter
+  const coverLetters = ["textarea[name='cover_letter']", "textarea[data-ui='cover_letter']", "#cover_letter"];
+  for (const s of coverLetters) {
+    if (await page.locator(s).count() > 0) {
+      await page.locator(s).first().fill(`Hi Hiring Team,
+
+I'm Vivek (IIT Roorkee, 2 YOE at BYJU'S), specializing in React, TypeScript & performant UI architecture. Excited about this opportunity and would love to contribute to your Frontend Developer team.
+
+Portfolio: ${profile.personal.portfolio} | LinkedIn: ${profile.personal.linkedin}
+Notice: Immediate (<= 15 days)`);
+      break;
+    }
+  }
+
+  // Custom Form Questions (Workable dynamic fields)
+  // City, Country question
+  const cityCountry = page.locator("input[name='CA_34899'], input[data-ui='CA_34899']");
+  if (await cityCountry.count() > 0) {
+    await cityCountry.first().fill("Delhi NCR, India");
+  }
+
+  // YOE question
+  const yoeInput = page.locator("input[name='CA_35127'], input[data-ui='CA_35127']");
+  if (await yoeInput.count() > 0) {
+    await yoeInput.first().fill("2");
+  }
+
+  // UK/US company question
+  const ukUsInput = page.locator("input[name='CA_35125'], input[data-ui='CA_35125']");
+  if (await ukUsInput.count() > 0) {
+    await ukUsInput.first().fill("No (Worked at BYJU'S, open to international remote contracts)");
+  }
+
+  // Degree question
+  const degreeInput = page.locator("input[name='CA_35126'], input[data-ui='CA_35126']");
+  if (await degreeInput.count() > 0) {
+    await degreeInput.first().fill("Yes, Bachelor of Engineering from IIT Roorkee");
+  }
+
+  // Desired salary (In ZAR)
+  const salaryInput = page.locator("input[name='CA_34897'], input[data-ui='CA_34897']");
+  if (await salaryInput.count() > 0) {
+    await salaryInput.first().fill("450,000 ZAR / year (Equivalent to ~$25,000 USD / negotiable)");
+  }
+
+  // Notice period
+  const noticeInput = page.locator("input[name='CA_34898'], input[data-ui='CA_34898']");
+  if (await noticeInput.count() > 0) {
+    await noticeInput.first().fill(profile.preferences?.noticePeriod || "Immediate (<= 15 days)");
+  }
+
+  // Radio button for "Are you currently based in South Africa?" -> NO
+  try {
+    const radioNo = page.locator("label:has-text('NO'), input[value*='no' i]");
+    if (await radioNo.count() > 0) {
+      await radioNo.first().click({ force: true, timeout: 3000 });
+    }
+  } catch {}
+
+  // Resume upload
+  if (resumePath && existsSync(resumePath)) {
+    const fileInputs = ["input[type='file'][data-ui='resume']", "input[type='file']"];
+    for (const s of fileInputs) {
+      if (await page.locator(s).count() > 0) {
+        await page.locator(s).first().setInputFiles(resumePath);
+        console.log(`📎 Attached resume: ${resumePath}`);
+        break;
+      }
+    }
+  }
+}
+
 export async function applyToJob(jobUrl, { headless = false, autoSubmit = false } = {}) {
   const profile = getProfile();
   const resumePath = resolve(rootDir, "resume.pdf");
@@ -183,19 +331,28 @@ export async function applyToJob(jobUrl, { headless = false, autoSubmit = false 
 
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
     if (jobUrl.includes("greenhouse.io")) {
       await fillGreenhouseApplication(page, profile, resumePath);
     } else if (jobUrl.includes("lever.co")) {
       await fillLeverApplication(page, profile, resumePath);
+    } else if (jobUrl.includes("workable.com")) {
+      await fillWorkableApplication(page, profile, resumePath);
     }
 
     console.log("✅ Form pre-filled successfully!");
 
     if (autoSubmit) {
       console.log("⚡ Auto-submitting application...");
-      const submitButtons = ["#submit_app", "button[type='submit']", "button:has-text('Submit Application')", "button:has-text('Apply')"];
+      const submitButtons = [
+        "button[data-ui='submit-application']",
+        "button:has-text('Submit application')",
+        "#submit_app",
+        "button[type='submit']",
+        "button:has-text('Submit Application')",
+        "button:has-text('Apply')"
+      ];
       for (const s of submitButtons) {
         if (await page.locator(s).count() > 0) {
           await page.locator(s).first().click();
@@ -226,5 +383,6 @@ export async function applyToJob(jobUrl, { headless = false, autoSubmit = false 
 // CLI usage: node scripts/auto-apply.mjs "<jobUrl>"
 if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2]) {
   const url = process.argv[2];
-  await applyToJob(url, { headless: false, autoSubmit: false });
+  const autoSubmitFlag = process.argv.includes("--submit");
+  await applyToJob(url, { headless: true, autoSubmit: autoSubmitFlag });
 }
