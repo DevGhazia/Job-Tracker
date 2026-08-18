@@ -500,7 +500,7 @@ export function extractCompanyAndRole(title, url, portalName = "") {
     const host = parsedUrl.hostname.toLowerCase();
     const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-    if (host.includes("greenhouse.io") || host.includes("lever.co") || host.includes("ashbyhq.com") || host.includes("workable.com") || host.includes("smartrecruiters.com")) {
+    if (host.includes("greenhouse.io") || host.includes("lever.co")) {
       if (pathParts.length > 0 && pathParts[0] !== "jobs" && pathParts[0] !== "job") {
         company = pathParts[0].replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
       } else if (pathParts.length > 1) {
@@ -525,7 +525,7 @@ export function extractCompanyAndRole(title, url, portalName = "") {
   }
 
   // Clean trailing board labels from role
-  role = role.replace(/\s*[-|]\s*(?:Greenhouse|Lever|Ashby|Workable|SmartRecruiters|Naukri|Wellfound|Instahyre).*$/i, "").trim();
+  role = role.replace(/\s*[-|]\s*(?:Greenhouse|Lever|Naukri|Wellfound|Instahyre|Cutshort).*$/i, "").trim();
   if (!company) company = portalName.replace(/\s*(?:Direct|Jobs)/i, "") || "Tech Company";
 
   return { company, role };
@@ -533,13 +533,10 @@ export function extractCompanyAndRole(title, url, portalName = "") {
 
 export async function fetchMultiPortalJobs() {
   if (!firecrawlClient) return [];
-  // Universal multi-company search across all major ATS platforms and job boards
+  // Curated portals: Greenhouse, Lever, YC, Wellfound, Instahyre, Cutshort, Naukri
   const portalSearches = [
     { portalName: "Greenhouse Direct", query: "site:boards.greenhouse.io (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\" OR \"Software Engineer Frontend\") (\"India\" OR \"Remote\")" },
     { portalName: "Lever Direct", query: "site:jobs.lever.co (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
-    { portalName: "Ashby Direct", query: "site:jobs.ashbyhq.com (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
-    { portalName: "Workable Direct", query: "site:apply.workable.com (\"Frontend Developer\" OR \"React Developer\") (\"India\" OR \"Remote\")" },
-    { portalName: "SmartRecruiters Direct", query: "site:jobs.smartrecruiters.com (\"Frontend Developer\" OR \"React Developer\") (\"India\" OR \"Remote\")" },
     { portalName: "Y Combinator", query: "site:workatastartup.com/jobs (\"Frontend\" OR \"React\")" },
     { portalName: "Wellfound", query: "site:wellfound.com/jobs (\"Frontend Developer\" OR \"React Developer\")" },
     { portalName: "Instahyre", query: "site:instahyre.com/job (\"Frontend Developer\" OR \"React Developer\")" },
@@ -601,7 +598,7 @@ export async function fetchMultiPortalJobs() {
 }
 
 export async function discoverLiveJobs() {
-  console.log("🔍 Scanning across ALL companies on LinkedIn, Greenhouse, Lever, Ashby, Workable, SmartRecruiters, Y Combinator, Wellfound, Instahyre, Cutshort & Naukri (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
+  console.log("🔍 Scanning across ALL companies on LinkedIn, Greenhouse, Lever, Y Combinator, Wellfound, Instahyre, Cutshort & Naukri (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
   const allJobs = [];
 
   // 1. Direct Curated ATS API endpoints (Fast Seed)
@@ -625,7 +622,7 @@ export async function discoverLiveJobs() {
     allJobs.push(...linkedInJobs);
   }
 
-  // 3. Universal Multi-Portal & ATS Discovery (Any company across Greenhouse, Lever, Ashby, Workable, YC, Wellfound, Instahyre, Cutshort, Naukri)
+  // 3. Universal Multi-Portal Discovery (Any company across Greenhouse, Lever, YC, Wellfound, Instahyre, Cutshort, Naukri)
   const portalJobs = await fetchMultiPortalJobs();
   if (portalJobs.length > 0) {
     console.log(`✅ [Universal Discovery] Found ${portalJobs.length} verified opening(s) across all platforms & companies`);
