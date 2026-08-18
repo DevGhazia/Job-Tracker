@@ -105,11 +105,11 @@
     "minimumSalaryINR": "8 LPA (₹8,00,000 INR)",
     "minimumSalaryUSD": "$20,000 USD / year",
     "salaryStrategy": {
-      "startup": "15 - 18 LPA (₹15,00,000 INR)",
-      "growthTech": "18 - 22 LPA (₹18,00,000 INR)",
-      "enterpriseTech": "20 - 25 LPA (₹20,00,000 INR)",
-      "internationalRemote": "$35,000 - $60,000 USD / year",
-      "default": "15 - 20 LPA (Open to negotiate)"
+      "startup": "14 - 17 LPA",
+      "growthTech": "15 - 20 LPA",
+      "enterpriseTech": "18 - 22 LPA",
+      "internationalRemote": "$35,000 - $55,000 USD / year",
+      "default": "15 - 20 LPA"
     }
   },
   "compliance": {

@@ -101,15 +101,15 @@ export function getDynamicSalary(companyTier, profile) {
   const strategies = profile?.preferences?.salaryStrategy || {};
   switch (companyTier) {
     case "startup":
-      return strategies.startup_early_stage || "15 - 18 LPA";
+      return strategies.startup || strategies.startup_early_stage || "14 - 17 LPA";
     case "growth":
-      return strategies.growth_unicorn || "18 - 22 LPA";
+      return strategies.growthTech || strategies.growth_unicorn || "15 - 20 LPA";
     case "enterprise":
-      return strategies.enterprise_faang || "20 - 25 LPA";
+      return strategies.enterpriseTech || strategies.enterprise_faang || "18 - 22 LPA";
     case "remote_us":
-      return strategies.remote_international || "$35,000 - $60,000 USD";
+      return strategies.internationalRemote || strategies.remote_international || "$35,000 - $55,000 USD";
     default:
-      return "16 - 20 LPA";
+      return strategies.default || "15 - 20 LPA";
   }
 }
 
