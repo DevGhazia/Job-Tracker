@@ -24,8 +24,8 @@ jobs:
 
       - name: Run Job Hunter & Queue
         env:
-          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY || 'fc-b45480c48b2548219e66ab2f246e13a7' }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1538187452605399170/aawtOmEscp4gKcwViBrzr57u1EcAX3_hUfl0pwkmUyr02_OI_oLXSTYV7VZ34Xun9ZE2' }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
           WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
         run: node scripts/search-and-queue.mjs
