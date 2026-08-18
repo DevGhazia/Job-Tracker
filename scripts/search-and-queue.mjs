@@ -107,9 +107,9 @@ async function runSearchAndQueue() {
   if (queuedCount > 0) {
     const summary = newlyQueued
       .slice(0, 5)
-      .map((j, idx) => `${idx + 1}. *${j.role}* at *${j.company}* (${j.portalName || j.source})`)
+      .map((j) => `• *${j.company}* — ${j.role} (${j.portalName || j.source})`)
       .join("\n");
-    const alertMsg = `⚡ *Job Tracker Alert!*\n\nFound and queued *${queuedCount}* new verified frontend role(s):\n\n${summary}\n\n👉 Review & Apply: https://thejobtracker.vercel.app/`;
+    const alertMsg = `🎯 *${queuedCount} New Frontend Role(s) Queued*\n\n${summary}\n\n👉 Action Queue: https://thejobtracker.vercel.app/`;
     await sendJobAlert({
       count: queuedCount,
       jobs: newlyQueued,
@@ -117,16 +117,15 @@ async function runSearchAndQueue() {
     });
   } else {
     const timeString = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
-    const dateString = new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", day: "numeric" });
     
     await sendDiscordNotification({
       embeds: [
         {
-          title: `🟢 Discovery Scan Complete (${timeString} IST)`,
-          description: `Scanned **LinkedIn, Direct ATS (Greenhouse/Lever), Y Combinator, Wellfound, Instahyre & Naukri**.\n\nAll verified $\\le 2$ YOE frontend openings are already up-to-date in your tracker. No new postings right now.`,
+          title: `🟢 Scan Complete • Tracker Up-to-Date`,
+          description: `No new postings right now.`,
           color: 0x10b981,
           footer: {
-            text: `Job Tracker Autonomous Hunter • ${dateString} • Next scan in ~4 hrs`
+            text: `Job Tracker • ${timeString} IST • Next scan in ~4 hrs`
           },
           url: "https://thejobtracker.vercel.app/"
         }

@@ -82,26 +82,26 @@ export async function sendDiscordNotification(payload) {
       const fields = jobs.slice(0, 6).map((j, i) => {
         const fallbackBadge = j.isFallback ? " • 🛡️ *Fast Fallback*" : "";
         return {
-          name: `${i + 1}. ${j.role}`,
-          value: `🏢 **${j.company}** • 🌐 ${j.portalName || j.source || 'Direct'}${fallbackBadge} • 📍 ${j.location || 'Remote'}\n[Apply Now](${j.jobUrl})`,
+          name: `${i + 1}. **${j.company}** — ${j.role}`,
+          value: `📍 ${j.location || 'Remote'} • 🌐 ${j.portalName || j.source || 'Direct'}${fallbackBadge} • [Apply Now ↗](${j.jobUrl})`,
           inline: false
         };
       });
 
       const fallbackNote = hasFallbacks
-        ? "\n\n🛡️ *Note: Some listings were preserved via Fast-Card Fallback due to portal rate-limiting.*"
+        ? "\n\n🛡️ *Note: Some listings were preserved via Fast-Card Fallback.*"
         : "";
 
       bodyData = {
         embeds: [
           {
-            title: `⚡ ${count} New Verified Job(s) Queued!`,
-            description: `Fresh frontend openings matching your **0–2 YOE profile** (posted $\\le 3$ days ago) have been added to your Action Queue.${fallbackNote}`,
-            color: 0x3b82f6, // Sleek brand blue
+            title: `🎯 ${count} New Frontend Role(s) Queued`,
+            description: `Ready in your [Action Queue](https://thejobtracker.vercel.app/)${fallbackNote}`,
+            color: 0x3b82f6,
             fields: fields,
             url: "https://thejobtracker.vercel.app/",
             footer: {
-              text: "Job Tracker Autonomous Hunter • 4x Daily Schedule"
+              text: "Job Tracker • Next scan in ~4 hrs"
             },
             timestamp: new Date().toISOString()
           }

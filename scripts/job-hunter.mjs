@@ -637,16 +637,13 @@ export async function discoverLiveJobs() {
 
 // Generate an authentic AI tailored pitch note
 export function generateTailoredPitch(job, profile) {
-  const skills = profile?.skills?.core?.slice(0, 4).join(", ") || "React, TypeScript, Redux, Tailwind CSS";
+  const skills = profile?.skills?.core?.slice(0, 4).join(", ") || "React, TypeScript, Tailwind CSS";
   const salary = getDynamicSalary(job.tier, profile);
 
-  return `Hi ${job.company} Hiring Team!
+  return `Hi ${job.company} Team,
 
-I'm Vivek, a Frontend Engineer with 2 years of production experience at BYJU'S building high-performance web applications using ${skills}. At BYJU'S, I engineered interactive UI systems with real-time state management and optimized rendering logic for 50+ web apps.
+I'm Vivek (IIT Roorkee, 2 YOE at BYJU'S), specializing in ${skills} & high-performance UI systems. Excited about your work and would love to contribute to the ${job.role} role.
 
-I'm very excited about ${job.company}'s mission and would love to bring my frontend expertise and IIT Roorkee engineering foundation to the ${job.role} team.
-
-Looking forward to connecting!
 Portfolio: ${profile?.personal?.portfolio || "https://vivek-kumar.dev"} | LinkedIn: ${profile?.personal?.linkedin}
-Target CTC: ${salary} (Immediate joiner, <= 15 days)`;
+Notice: Immediate (<= 15d) | Target CTC: ${salary}`;
 }
