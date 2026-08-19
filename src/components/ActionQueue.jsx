@@ -2,7 +2,7 @@ import { HiLocationMarker, HiCalendar, HiLightningBolt } from "react-icons/hi";
 import { FaBusinessTime } from "react-icons/fa6";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiSolidMessageSquareCheck } from "react-icons/bi";
-import { ACTIONS, formateDate } from "../constants";
+import { ACTIONS, formateDate, formatLocation } from "../constants";
 import CompanyLogo from "./CompanyLogo";
 
 const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) => {
@@ -84,7 +84,7 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) =>
                             <div className="row-meta queue-row-meta">
                                 <div className="tag-container">
                                     <HiLocationMarker className="tag-icon" />
-                                    <span>{app.location || "Remote"}</span>
+                                    <span>{formatLocation(app.location)}</span>
                                 </div>
                                 <div className="tag-container">
                                     <FaBusinessTime className="tag-icon" />

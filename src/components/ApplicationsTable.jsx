@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { PiCalendarDotsFill } from "react-icons/pi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { GoClockFill } from "react-icons/go";
-import { HiLocationMarker, HiBriefcase } from "react-icons/hi";
+import { HiLocationMarker, HiBriefcase, HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import {
     BiSolidMessageSquareCheck,
     BiSolidMessageSquareDots,
@@ -12,12 +12,15 @@ import {
     BiSolidMessageSquareX,
 } from "react-icons/bi";
 import { FaBusinessTime } from "react-icons/fa6";
-import { ACTIONS, formateDate, getDaysPassed, STATUSES, TIMEOUT_PERIOD } from "../constants";
+import { ACTIONS, formateDate, formatLocation, getDaysPassed, STATUSES, TIMEOUT_PERIOD } from "../constants";
 import CompanyLogo from "./CompanyLogo";
+
+const ITEMS_PER_PAGE = 10;
 
 const ApplicationsTable = ({ list, updateList, handleDelete }) => {
     const tableHeadings = ["Logo", "Company", "Status", "Applied", "Role", "Experience", "Since"];
     const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         if (!list) return;
@@ -28,6 +31,11 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
             }
         });
     }, [list]);
+
+    // Reset pagination when search term changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     function getTimeElapsed(date, type) {
         const days = getDaysPassed(date);
@@ -88,6 +96,12 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
         comp.company.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE) || 1;
+    const activePage = Math.min(currentPage, totalPages);
+    const startIndex = (activePage - 1) * ITEMS_PER_PAGE;
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredList.length);
+    const paginatedList = filteredList.slice(startIndex, endIndex);
+
     return (
         <section className="list-container">
             <div className="list-heading">
@@ -121,8 +135,8 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                 </div>
 
                 <div className="table-body">
-                    {filteredList.map((app, index) => (
-                        <div className="table-row card" key={index}>
+                    {paginatedList.map((app, index) => (
+                        <div className="table-row card" key={app.id || index}>
                             {/* --------- LEFT: LOGO | NAME & ROLE -------*/}
                             <div className="row-top">
                                 <div className="cell-logo-container">
@@ -156,7 +170,7 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                                     </div>
                                     <div className="tag-container">
                                         <HiLocationMarker className="tag-icon" />
-                                        <span>{app.location}</span>
+                                        <span>{formatLocation(app.location)}</span>
                                     </div>
                                     <div className="tag-container">
                                         <FaBusinessTime className="tag-icon" />
@@ -198,6 +212,66 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
                     ))}
                 </div>
             </div>
+
+            {/* --------- PAGINATION CONTROLS ------- */}
+            {filteredList.length > ITEMS_PER_PAGE && (
+                <div className="pagination-container">
+                    <div className="pagination-info">
+                        Showing <span>{startIndex + 1}</span>–<span>{endIndex}</span> of <span>{filteredList.length}</span> companies
+                    </div>
+                    <div className="pagination-controls">
+                        <button
+                            type="button"
+                            className="pagination-btn"
+                            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                            disabled={activePage === 1}
+                            title="Previous page"
+                        >
+                            <HiChevronLeft className="pagination-icon" />
+                            <span>Prev</span>
+                        </button>
+
+                        <div className="pagination-pages">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                                if (
+                                    totalPages <= 7 ||
+                                    pageNum === 1 ||
+                                    pageNum === totalPages ||
+                                    (pageNum >= activePage - 1 && pageNum <= activePage + 1)
+                                ) {
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            type="button"
+                                            className={`pagination-page-btn ${activePage === pageNum ? "active" : ""}`}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                } else if (
+                                    (pageNum === activePage - 2 && pageNum > 1) ||
+                                    (pageNum === activePage + 2 && pageNum < totalPages)
+                                ) {
+                                    return <span key={pageNum} className="pagination-ellipsis">…</span>;
+                                }
+                                return null;
+                            })}
+                        </div>
+
+                        <button
+                            type="button"
+                            className="pagination-btn"
+                            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                            disabled={activePage === totalPages}
+                            title="Next page"
+                        >
+                            <span>Next</span>
+                            <HiChevronRight className="pagination-icon" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </section>
     );
 };

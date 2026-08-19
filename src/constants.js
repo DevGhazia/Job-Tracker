@@ -52,3 +52,29 @@ export function getDaysPassed(date){
     const totalDays = Math.floor(difference/ oneDay);   
     return totalDays;
 }
+
+export function formatLocation(loc){
+    if (!loc || typeof loc !== "string") return "Remote";
+    const str = loc.trim();
+    if (!str) return "Remote";
+
+    // Handle pure remote indicators
+    if (/^remote$/i.test(str) || /^(?:india\s*[\/,]\s*remote|remote\s*[\/,]\s*india)$/i.test(str)) return "Remote";
+    if (/^india\s*\(\s*remote(?:\s*[\/,]\s*hybrid)?\s*\)$/i.test(str)) return "Remote";
+
+    // Extract the primary city name (split by comma, slash, pipe, bullet, or spaced hyphen)
+    let primary = str.split(/[,/|•]|\s+-\s+/)[0].trim();
+    primary = primary.replace(/\s*\([^)]*\)/g, "").trim();
+
+    // If first token is only generic "India", fallback to second token if present
+    if (/^india$/i.test(primary)) {
+        const parts = str.split(/[,/|•]|\s+-\s+/).map(p => p.trim());
+        if (parts.length > 1 && parts[1] && !/^india$/i.test(parts[1])) {
+            return parts[1].replace(/\s*\([^)]*\)/g, "").trim();
+        }
+        return "India";
+    }
+
+    return primary || "Remote";
+}
+
