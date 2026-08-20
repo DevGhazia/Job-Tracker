@@ -43,7 +43,7 @@
       "highlights": [
         "Developed and maintained 50+ interactive web-based applications using TypeScript and React, serving 2M+ active learners with 99.8% uptime.",
         "Engineered high-performance UI systems with complex animations and real-time state updates, maintaining a smooth 60 FPS on low-end devices.",
-        "Optimized Core Web Vitals and rendering architecture, reducing bundle load times by 38% and memory usage by 25% via code-splitting and asset pre-fetching.",
+        "Improved application efficiency and rendering logic, optimizing memory usage and UI responsiveness across web clients.",
         "Collaborated with cross-functional teams (Product Managers, UX Designers, Backend SDEs) in an Agile sprint cadence to ship 15+ feature releases on schedule."
       ]
     },

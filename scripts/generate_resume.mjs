@@ -192,7 +192,7 @@ const html = `
   <!-- Summary -->
   <h2>Professional Summary</h2>
   <p style="color: #334155; font-size: 10.5px; margin-bottom: 1px;">
-    <strong>Frontend Engineer (IIT Roorkee, 2+ YOE)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and scalable UI architecture</strong>. Track record of engineering 50+ high-traffic web applications at BYJU'S serving 2M+ learners with 99.8% uptime. Adept at Core Web Vitals optimization, reducing bundle latency by 38%, state management, and building responsive, accessible web interfaces.
+    <strong>Frontend Engineer (IIT Roorkee, 2+ YOE)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and scalable UI architecture</strong>. Track record of engineering 50+ high-traffic web applications at BYJU'S serving 2M+ learners with 99.8% uptime. Adept at rendering performance optimization, state management, and building responsive, accessible web interfaces.
   </p>
 
   <!-- Experience -->
