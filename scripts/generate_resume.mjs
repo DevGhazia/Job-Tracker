@@ -192,7 +192,7 @@ const html = `
   <!-- Summary -->
   <h2>Professional Summary</h2>
   <p style="color: #334155; font-size: 10.5px; margin-bottom: 1px;">
-    <strong>Frontend Engineer (IIT Roorkee, 2+ YOE)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and scalable UI architecture</strong>. Experience developing 50+ interactive web applications at BYJU'S serving 2M+ learners and delivering freelance production web apps (Amazon E-Commerce, Gemini AI Chat). Adept at Core Web Vitals optimization, reducing bundle latency by 38%, and building responsive, accessible web interfaces.
+    <strong>Frontend Engineer (IIT Roorkee, 2+ YOE)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and scalable UI architecture</strong>. Experience developing 50+ interactive web applications at BYJU'S serving 2M+ learners, alongside delivering client freelance web applications and building modern React projects. Adept at Core Web Vitals optimization, reducing bundle latency by 38%, and building responsive, accessible web interfaces.
   </p>
 
   <!-- Experience -->
@@ -214,7 +214,7 @@ const html = `
   `).join("")}
 
   <!-- Projects -->
-  <h2>Featured Production Projects</h2>
+  <h2>Personal & Featured Projects</h2>
   ${(profile.projects || []).map(proj => `
     <div class="item">
       <div class="item-header">
@@ -252,7 +252,7 @@ const html = `
     </div>
   </div>
 
-  <!-- Education & Honors -->
+  <!-- Education & Achievements -->
   <h2>Education & Achievements</h2>
   <div class="item">
     <div class="item-header">
@@ -265,7 +265,7 @@ const html = `
     </div>
   </div>
   <div class="award-text">
-    🏆 <strong>BYJU'S TechX Award (2022)</strong> — Recognized for Exceptional Ownership & Accountability across core frontend engineering initiatives.
+    🏆 <strong>BYJU'S TechX Award - Ownership & Accountability, 2022</strong>
   </div>
 </body>
 </html>

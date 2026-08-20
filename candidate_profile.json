@@ -24,40 +24,39 @@
   "experience": [
     {
       "company": "Self-Employed",
-      "role": "Freelance Frontend Developer",
-      "startDate": "2023-02",
+      "role": "Freelance Developer",
+      "startDate": "02-2023",
       "endDate": "Present",
       "location": "Remote",
       "highlights": [
-        "Architected scalable web applications using React, TypeScript, Redux Toolkit, and Firebase with clean modular architecture.",
-        "Engineered production-ready web apps including an Amazon E-Commerce platform and a real-time Gemini AI chat application.",
-        "Built reusable component systems and optimized Core Web Vitals, eliminating unnecessary re-renders and enhancing UI responsiveness.",
-        "Integrated asynchronous RESTful data pipelines, authentication systems, and client-side persistent state stores."
+        "Designed and developed scalable web applications using React, TypeScript, Redux Toolkit, and Firebase, focusing on performance, maintainability, and clean architecture.",
+        "Built responsive web interfaces with dynamic state management and asynchronous RESTful API integrations.",
+        "Implemented reusable component systems and optimized rendering performance to reduce unnecessary re-renders and improve UI responsiveness."
       ]
     },
     {
       "company": "BYJU'S",
       "role": "Software Engineer - Frontend Web Applications",
-      "startDate": "2021-01",
-      "endDate": "2023-01",
+      "startDate": "01-2021",
+      "endDate": "01-2023",
       "location": "Bangalore, India",
       "highlights": [
-        "Engineered 50+ interactive, high-performance web applications using React, TypeScript, and Redux, serving 2M+ active learners with 99.8% uptime.",
-        "Optimized Core Web Vitals and rendering architecture, reducing initial bundle load times by 38% and memory consumption by 25% via code-splitting, lazy loading, and asset pre-fetching.",
-        "Architected scalable UI modules, design tokens, and real-time state machines using Tailwind CSS and Context API, maintaining a fluid 60 FPS across low-end mobile web clients.",
-        "Collaborated with cross-functional teams (Product Managers, UX Designers, Backend SDEs) in an Agile sprint cadence to ship 15+ major production releases on schedule."
+        "Developed and maintained 50+ interactive web-based applications using TypeScript and React, serving 2M+ active learners with 99.8% uptime.",
+        "Engineered high-performance UI systems with complex animations and real-time state updates, maintaining a smooth 60 FPS on low-end devices.",
+        "Optimized Core Web Vitals and rendering architecture, reducing bundle load times by 38% and memory usage by 25% via code-splitting and asset pre-fetching.",
+        "Collaborated with cross-functional teams (Product Managers, UX Designers, Backend SDEs) in an Agile sprint cadence to ship 15+ feature releases on schedule."
       ]
     },
     {
       "company": "EWar Games",
-      "role": "Software Engineer Intern",
-      "startDate": "2020-01",
-      "endDate": "2020-03",
+      "role": "Game Developer Intern",
+      "startDate": "01-2020",
+      "endDate": "03-2020",
       "location": "IIT Roorkee, India",
       "highlights": [
-        "Built interactive 3D frontend interfaces using C# and client-side rendering engines, improving frame rate stability by 30%.",
-        "Implemented real-time client-server communication protocols with secure asynchronous data handling.",
-        "Profiled and resolved UI bottlenecks, memory leaks, and render latency for high-traffic gameplay sessions."
+        "Built a 3D arcade game using C#, focusing on smooth UI/UX and gameplay experience.",
+        "Implemented client-server communication with secure data handling.",
+        "Worked on performance optimization and UI polish for seamless gameplay."
       ]
     }
   ],
