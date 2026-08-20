@@ -78,7 +78,7 @@
       "github": "https://github.com/DevGhazia",
       "highlights": [
         "Developed a real-time conversational AI application integrating Google Gemini APIs with token streaming, prompt caching, and markdown parsing.",
-        "Engineered robust asynchronous data pipelines and responsive conversational UI components with custom dark/light theme styling."
+        "Engineered multi-session conversation persistence and state caching, allowing users to save, manage, and resume chat history seamlessly across sessions."
       ]
     }
   ],
