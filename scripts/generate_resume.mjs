@@ -178,7 +178,7 @@ const html = `
   <!-- Header -->
   <div class="header">
     <div class="name">${profile.personal.fullName}</div>
-    <div class="headline">Frontend Software Engineer | React, TypeScript, Next.js & UI Architecture</div>
+    <div class="headline">Frontend Software Engineer | React, TypeScript, Redux & UI Architecture</div>
     <div class="contact-bar">
       <span>📍 ${profile.personal.currentLocation}</span>
       <span>📞 ${profile.personal.phone}</span>
@@ -192,7 +192,7 @@ const html = `
   <!-- Summary -->
   <h2>Professional Summary</h2>
   <p style="color: #334155; font-size: 11px; margin-bottom: 2px;">
-    <strong>Frontend Engineer (IIT Roorkee, 2 YOE at BYJU'S)</strong> specializing in <strong>React, TypeScript, Redux, and modern UI architectures</strong>. Track record of engineering 50+ high-traffic web applications serving 2M+ learners with 99.8% uptime. Adept at Core Web Vitals optimization, reducing bundle latency by 38%, and architecting responsive, accessible design systems.
+    <strong>Frontend Engineer (IIT Roorkee, 2 YOE at BYJU'S)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and modern UI architectures</strong>. Track record of engineering 50+ high-traffic web applications serving 2M+ learners with 99.8% uptime. Adept at Core Web Vitals optimization, reducing bundle latency by 38%, and architecting responsive, accessible design systems.
   </p>
 
   <!-- Experience -->
@@ -240,15 +240,15 @@ const html = `
     </div>
     <div class="skills-row">
       <span class="skills-cat">Frameworks & Libraries:</span>
-      <span class="skills-val">React.js, Next.js, Redux Toolkit, Context API, Tailwind CSS, Shadcn/ui, React-Router</span>
+      <span class="skills-val">React.js, React Native, Redux Toolkit, Context API, Tailwind CSS, Shadcn/ui, React-Router</span>
     </div>
     <div class="skills-row">
       <span class="skills-cat">Architecture & Performance:</span>
       <span class="skills-val">Core Web Vitals, Code-Splitting, Lazy Loading, RESTful APIs, State Management, Responsive Design</span>
     </div>
     <div class="skills-row">
-      <span class="skills-cat">Tooling & Testing:</span>
-      <span class="skills-val">Git, GitHub Actions, Vite, Webpack, Firebase Firestore, Jest, Figma, Agile/Scrum</span>
+      <span class="skills-cat">Tooling & Workflow:</span>
+      <span class="skills-val">Git, GitHub Actions, Vite, Firebase Firestore, Jest, Figma, Jira, VS Code, Agile/Scrum</span>
     </div>
   </div>
 

@@ -50,23 +50,23 @@
   ],
   "projects": [
     {
-      "name": "Job Tracker — Autonomous Career Workflow Platform",
-      "technologies": ["React", "Vite", "TypeScript", "Tailwind CSS", "Firebase Firestore", "REST APIs"],
-      "link": "https://thejobtracker.vercel.app/",
-      "github": "https://github.com/DevGhazia/Job-Tracker",
+      "name": "Amazon E-Commerce Store",
+      "technologies": ["React", "TypeScript", "Redux Toolkit", "Tailwind CSS", "Firebase"],
+      "link": "https://ecomon-store.vercel.app/app",
+      "github": "https://github.com/DevGhazia",
       "highlights": [
-        "Architected a production career management platform featuring real-time Firestore synchronization, dynamic multi-status tracking, and 10-item smart pagination.",
-        "Engineered multi-channel ATS automation pipelines with automated job discovery and instant Discord webhook alerts."
+        "Architected a production-style Amazon-inspired e-commerce web platform featuring dynamic product catalog rendering, multi-category search, and persistent cart management.",
+        "Optimized global state handling using Redux Toolkit and Context API, ensuring seamless checkout workflows and sub-100ms render response times."
       ]
     },
     {
-      "name": "Frontend Portfolio & Modern UI Design System",
-      "technologies": ["React", "TypeScript", "Tailwind CSS", "Vercel"],
-      "link": "https://vivek-kumar.dev",
+      "name": "Gemini AI Chat Application",
+      "technologies": ["React", "TypeScript", "Google Gemini API", "Tailwind CSS", "REST APIs"],
+      "link": "https://ai-generative-bot.vercel.app/",
       "github": "https://github.com/DevGhazia",
       "highlights": [
-        "Built an accessible (WCAG-compliant) responsive web application featuring custom dark/light theme tokens and sub-100ms interaction latency.",
-        "Achieved a 98+ Google Lighthouse performance score by implementing asset compression, semantic markup, and optimized CSS bundle delivery."
+        "Developed a real-time conversational AI application integrating Google Gemini APIs with token streaming, prompt caching, and markdown parsing.",
+        "Engineered robust asynchronous data pipelines and responsive conversational UI components with custom dark/light theme styling."
       ]
     }
   ],
@@ -79,7 +79,7 @@
     ],
     "frontend": [
       "React.js",
-      "Next.js",
+      "React Native",
       "Redux Toolkit",
       "Context API",
       "Tailwind CSS",
@@ -98,10 +98,10 @@
       "Git",
       "GitHub Actions",
       "Vite",
-      "Webpack",
       "Firebase",
       "Jest",
       "Figma",
+      "Jira",
       "VS Code"
     ],
     "core": [
@@ -111,7 +111,6 @@
       "Redux",
       "ContextAPI",
       "TailwindCSS",
-      "Next.js",
       "HTML5",
       "CSS3"
     ],
