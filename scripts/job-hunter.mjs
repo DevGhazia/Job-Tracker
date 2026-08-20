@@ -396,8 +396,13 @@ export async function fetchLinkedInJobs() {
 }
 
 export async function fetchClearoutLogo(companyName) {
+  if (!companyName) return null;
+  const cleanName = companyName
+    .replace(/\s*(?:in india|technologies|solutions|inc|pvt|ltd|interactive|software|tech|llc|gmbh).*$/i, "")
+    .trim();
+  
   try {
-    const res = await fetch(`https://api.clearout.io/public/companies/autocomplete?query=${encodeURIComponent(companyName)}`, {
+    const res = await fetch(`https://api.clearout.io/public/companies/autocomplete?query=${encodeURIComponent(cleanName)}`, {
       signal: AbortSignal.timeout(3500)
     });
     if (res.ok) {
@@ -407,7 +412,9 @@ export async function fetchClearoutLogo(companyName) {
       }
     }
   } catch {}
-  return null;
+
+  const domain = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
+  return `https://unavatar.io/${domain}?fallback=https://logo.clearbit.com/${domain}`;
 }
 
 export async function fetchGreenhouseJobs(companyObj) {

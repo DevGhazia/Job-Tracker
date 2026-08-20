@@ -21,10 +21,15 @@ if (!getApps().length) {
 const db = getFirestore();
 const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
-async function fetchClearoutLogo(companyName) {
+async function resolveCompanyLogo(companyName) {
+  if (!companyName) return null;
+  const cleanName = companyName
+    .replace(/\s*(?:in india|technologies|solutions|inc|pvt|ltd|interactive|software|tech|llc|gmbh).*$/i, "")
+    .trim();
+
   try {
-    const res = await fetch(`https://api.clearout.io/public/companies/autocomplete?query=${encodeURIComponent(companyName)}`, {
-      signal: AbortSignal.timeout(4000)
+    const res = await fetch(`https://api.clearout.io/public/companies/autocomplete?query=${encodeURIComponent(cleanName)}`, {
+      signal: AbortSignal.timeout(3500)
     });
     if (res.ok) {
       const data = await res.json();
@@ -33,12 +38,14 @@ async function fetchClearoutLogo(companyName) {
       }
     }
   } catch {}
-  return null;
+
+  const domain = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
+  return `https://unavatar.io/${domain}?fallback=https://logo.clearbit.com/${domain}`;
 }
 
-async function backfillClearoutLogos() {
+async function backfillAllLogos() {
   const snapshot = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications").get();
-  console.log(`Checking ${snapshot.size} applications for Clearout logos...`);
+  console.log(`Checking ${snapshot.size} applications for missing/broken logos...`);
   const batch = db.batch();
   let updatedCount = 0;
 
@@ -47,21 +54,24 @@ async function backfillClearoutLogos() {
     const company = data.company;
     if (!company) continue;
 
-    // Check Clearout logo
-    const clearoutLogo = await fetchClearoutLogo(company);
-    if (clearoutLogo && clearoutLogo !== data.logo) {
-      console.log(`✅ Found logo for ${company}: ${clearoutLogo}`);
-      batch.update(doc.ref, { logo: clearoutLogo });
-      updatedCount++;
+    const isMissing = !data.logo || data.logo === "null" || data.logo === "undefined" || data.logo.includes("default-company.png");
+    if (isMissing) {
+      const resolvedLogo = await resolveCompanyLogo(company);
+      if (resolvedLogo) {
+        console.log(`✅ Backfilled logo for ${company}: ${resolvedLogo}`);
+        batch.update(doc.ref, { logo: resolvedLogo });
+        updatedCount++;
+      }
     }
   }
 
   if (updatedCount > 0) {
     await batch.commit();
-    console.log(`\n🎉 Successfully updated logos for ${updatedCount} applications!`);
+    console.log(`\n🎉 Successfully backfilled logos for ${updatedCount} applications!`);
   } else {
-    console.log("\nAll applications already have updated logos.");
+    console.log("\nAll applications already have valid logos.");
   }
 }
 
-backfillClearoutLogos();
+backfillAllLogos();
+

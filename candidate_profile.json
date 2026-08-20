@@ -65,7 +65,7 @@
       "name": "Amazon E-Commerce Store",
       "technologies": ["React", "TypeScript", "Redux Toolkit", "Tailwind CSS", "Firebase"],
       "link": "https://ecomon-store.vercel.app/app",
-      "github": "https://github.com/DevGhazia",
+      "github": "https://github.com/DevGhazia/Amazon_Clone",
       "highlights": [
         "Architected a production-style Amazon-inspired e-commerce web platform featuring dynamic product catalog rendering, multi-category search, and persistent cart management.",
         "Optimized global state handling using Redux Toolkit and Context API, ensuring seamless checkout workflows and sub-100ms render response times."
@@ -75,7 +75,7 @@
       "name": "Gemini AI Chat Application",
       "technologies": ["React", "TypeScript", "Google Gemini API", "Tailwind CSS", "REST APIs"],
       "link": "https://ai-generative-bot.vercel.app/",
-      "github": "https://github.com/DevGhazia",
+      "github": "https://github.com/DevGhazia/AIChatBot",
       "highlights": [
         "Developed a real-time conversational AI application integrating Google Gemini APIs with token streaming, prompt caching, and markdown parsing.",
         "Engineered multi-session conversation persistence and state caching, allowing users to save, manage, and resume chat history seamlessly across sessions."
