@@ -18,39 +18,39 @@ const html = `
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: #1e293b;
-      line-height: 1.38;
-      font-size: 11.5px;
+      line-height: 1.32;
+      font-size: 10.5px;
       background: #ffffff;
-      padding: 24px 28px;
+      padding: 16px 22px;
     }
     
     /* Header */
     .header {
       text-align: center;
-      border-bottom: 2px solid #2563eb;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
+      border-bottom: 1.5px solid #2563eb;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
     }
     .name {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
       color: #0f172a;
       letter-spacing: -0.3px;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
       text-transform: uppercase;
     }
     .headline {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: #2563eb;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
     .contact-bar {
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
-      gap: 12px;
-      font-size: 11px;
+      gap: 10px;
+      font-size: 10px;
       color: #475569;
     }
     .contact-bar a {
@@ -62,34 +62,34 @@ const html = `
 
     /* Section Headings */
     h2 {
-      font-size: 12.5px;
+      font-size: 11.5px;
       font-weight: 700;
       color: #0f172a;
       text-transform: uppercase;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
       border-bottom: 1px solid #cbd5e1;
-      padding-bottom: 2px;
-      margin-top: 10px;
-      margin-bottom: 6px;
+      padding-bottom: 1.5px;
+      margin-top: 7px;
+      margin-bottom: 4px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     /* Items */
-    .item { margin-bottom: 8px; }
+    .item { margin-bottom: 5px; }
     .item-header {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
     }
     .company {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       color: #0f172a;
     }
     .location {
-      font-size: 11px;
+      font-size: 10px;
       color: #64748b;
       font-weight: 400;
     }
@@ -97,26 +97,26 @@ const html = `
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .role {
-      font-size: 11.5px;
+      font-size: 10.5px;
       font-weight: 600;
       color: #2563eb;
     }
     .date {
-      font-size: 10.5px;
+      font-size: 10px;
       color: #64748b;
       font-weight: 500;
     }
 
     /* Bullet Lists */
     ul {
-      margin-left: 16px;
+      margin-left: 14px;
       list-style-type: square;
     }
     li {
-      margin-bottom: 2.5px;
+      margin-bottom: 1.5px;
       color: #334155;
     }
     li strong {
@@ -126,12 +126,12 @@ const html = `
 
     /* Projects */
     .project-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       color: #0f172a;
     }
     .project-links {
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 500;
     }
     .project-links a {
@@ -140,25 +140,25 @@ const html = `
       margin-left: 6px;
     }
     .project-tech {
-      font-size: 10.5px;
+      font-size: 10px;
       color: #475569;
       font-style: italic;
-      margin-bottom: 2px;
+      margin-bottom: 1.5px;
     }
 
     /* Skills Categorized */
     .skills-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 2px;
+      margin-top: 1px;
     }
     .skills-row {
       display: flex;
-      margin-bottom: 3px;
-      font-size: 11px;
+      margin-bottom: 2px;
+      font-size: 10.5px;
     }
     .skills-cat {
-      width: 165px;
+      width: 155px;
       font-weight: 700;
       color: #0f172a;
       flex-shrink: 0;
@@ -169,7 +169,7 @@ const html = `
 
     /* Awards */
     .award-text {
-      font-size: 11px;
+      font-size: 10.5px;
       color: #334155;
     }
   </style>
@@ -191,8 +191,8 @@ const html = `
 
   <!-- Summary -->
   <h2>Professional Summary</h2>
-  <p style="color: #334155; font-size: 11px; margin-bottom: 2px;">
-    <strong>Frontend Engineer (IIT Roorkee, 2 YOE at BYJU'S)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and modern UI architectures</strong>. Track record of engineering 50+ high-traffic web applications serving 2M+ learners with 99.8% uptime. Adept at Core Web Vitals optimization, reducing bundle latency by 38%, and architecting responsive, accessible design systems.
+  <p style="color: #334155; font-size: 10.5px; margin-bottom: 1px;">
+    <strong>Frontend Engineer (IIT Roorkee, 2+ YOE)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and scalable UI architecture</strong>. Experience developing 50+ interactive web applications at BYJU'S serving 2M+ learners and delivering freelance production web apps (Amazon E-Commerce, Gemini AI Chat). Adept at Core Web Vitals optimization, reducing bundle latency by 38%, and building responsive, accessible web interfaces.
   </p>
 
   <!-- Experience -->
@@ -280,7 +280,7 @@ export async function ensureResumePdf() {
     path: pdfPath,
     format: "A4",
     printBackground: true,
-    margin: { top: "12mm", bottom: "12mm", left: "12mm", right: "12mm" }
+    margin: { top: "8mm", bottom: "8mm", left: "8mm", right: "8mm" }
   });
   await browser.close();
   console.log(`✅ 95+ ATS resume.pdf generated successfully at: ${pdfPath}`);

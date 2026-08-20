@@ -23,6 +23,19 @@
   ],
   "experience": [
     {
+      "company": "Self-Employed",
+      "role": "Freelance Frontend Developer",
+      "startDate": "2023-02",
+      "endDate": "Present",
+      "location": "Remote",
+      "highlights": [
+        "Architected scalable web applications using React, TypeScript, Redux Toolkit, and Firebase with clean modular architecture.",
+        "Engineered production-ready web apps including an Amazon E-Commerce platform and a real-time Gemini AI chat application.",
+        "Built reusable component systems and optimized Core Web Vitals, eliminating unnecessary re-renders and enhancing UI responsiveness.",
+        "Integrated asynchronous RESTful data pipelines, authentication systems, and client-side persistent state stores."
+      ]
+    },
+    {
       "company": "BYJU'S",
       "role": "Software Engineer - Frontend Web Applications",
       "startDate": "2021-01",
