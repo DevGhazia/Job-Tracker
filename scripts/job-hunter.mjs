@@ -139,21 +139,48 @@ export function isStrictlyBackendOnly(text = "") {
   return false;
 }
 
-function extractExperience(text = "") {
-  // Reject high experience
-  const highExpRegex = /(?:3\+|4\+|5\+|6\+|7\+|8\+|3\s*-\s*5|4\s*-\s*6|5\s*-\s*7|3\s*to\s*5|4\s*to\s*6)\s*(?:years?|yrs?|yoe)/i;
-  if (highExpRegex.test(text)) {
-    return { valid: false, exp: 3, reason: "Requires > 2 years experience" };
+export function extractExperience(text = "") {
+  if (!text) return { valid: true, exp: 2 };
+  const lower = text.toLowerCase();
+
+  // Split into required section vs nice-to-have to avoid rejecting jobs where 3+ years is only a "bonus/preferred"
+  const niceToHaveIdx = lower.search(/(?:nice to have|good to have|bonus points|preferred qualifications|optional|plus points|not mandatory|pluses)/i);
+  const requiredSection = niceToHaveIdx !== -1 ? lower.slice(0, niceToHaveIdx) : lower;
+
+  // 1. High Experience Rejection Patterns (> 2 years in required section)
+  // Handles "min 3 years of hands-on experience", "at least 3 years in react", "3-5 years", "over 3 years", etc.
+  const highExpPatterns = [
+    /(?:[3-9]|\d{2,})\s*\+\s*(?:years?|yrs?|yoe)/i,
+    /(?:[3-9]|\d{2,})\s*(?:-|to)\s*\d+\s*(?:years?|yrs?|yoe)/i,
+    /(?:min|minimum|at least|over|more than|around|approx|about)\s+(?:of\s+)?(?:[3-9]|\d{2,})\s*(?:\+)?\s*(?:years?|yrs?|yoe)/i,
+    /(?:[3-9]|\d{2,})\s*(?:\+)?\s*(?:years?|yrs?|yoe)\s+(?:of\s+)?(?:hands[\s-]on|relevant|professional|industry|commercial|proven|solid|deep|practical)?\s*(?:work\s+)?experience/i,
+    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–]\s*(?:min|at least)?\s*(?:[3-9]|\d{2,})/i
+  ];
+
+  for (const pattern of highExpPatterns) {
+    const match = requiredSection.match(pattern);
+    if (match) {
+      return { valid: false, exp: 3, reason: `Requires > 2 YOE: "${match[0]}"` };
+    }
   }
 
-  // Valid 0-2 YOE patterns
-  const validExpRegex = /(?:0\s*-\s*1|0\s*-\s*2|1\s*-\s*2|0\s*to\s*2|1\s*to\s*2|1\+|2\+|1\s*years?|2\s*years?|fresher|entry[\s-]level|junior)\s*(?:of)?\s*(?:years?|yrs?|yoe|experience)?/i;
-  const match = text.match(validExpRegex);
-  if (match) {
-    if (match[0].includes("0") || match[0].includes("1") || match[0].includes("fresher") || match[0].includes("junior")) {
-      return { valid: true, exp: 1 };
+  // 2. Target 0-2 YOE Matching (Handles "min 2 years hands on experience with react", "0-2 years", "fresher", etc.)
+  const targetExpPatterns = [
+    /(?:min|minimum|at least|around|approx|about)\s+(?:of\s+)?([0-2])\s*(?:\+)?\s*(?:years?|yrs?|yoe)/i,
+    /(?:0\s*-\s*1|0\s*-\s*2|1\s*-\s*2|0\s*to\s*2|1\s*to\s*2|1\s*-\s*3|2\s*-\s*3)\s*(?:years?|yrs?|yoe)/i,
+    /([0-2])\s*(?:\+)?\s*(?:years?|yrs?|yoe)\s*(?:of)?\s*(?:hands[\s-]on|relevant|professional|industry|practical|proven)?\s*(?:work\s+)?experience/i,
+    /(?:fresher|entry[\s-]level|junior|graduate|intern|associate)\s*(?:frontend|developer|engineer|software)?/i
+  ];
+
+  for (const pattern of targetExpPatterns) {
+    const match = requiredSection.match(pattern);
+    if (match) {
+      const matchStr = match[0].toLowerCase();
+      if (matchStr.includes("0") || matchStr.includes("1") || matchStr.includes("fresher") || matchStr.includes("junior") || matchStr.includes("intern") || matchStr.includes("graduate")) {
+        return { valid: true, exp: 1 };
+      }
+      return { valid: true, exp: 2 };
     }
-    return { valid: true, exp: 2 };
   }
 
   return { valid: true, exp: 2 };
