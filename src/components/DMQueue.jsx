@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { listenToDmLeads, updateDmLeadStatus, deleteDmLead } from "../utils_firebase";
 import CompanyLogo from "./CompanyLogo";
-import { FiSend, FiCopy, FiCheck, FiExternalLink, FiTrash2, FiCheckCircle } from "react-icons/fi";
+import { FiSend, FiCopy, FiCheck, FiExternalLink, FiTrash2, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock } from "react-icons/fi";
 import { FaStar } from "react-icons/fa6";
 import { formateDate } from "../constants";
 
@@ -21,14 +21,29 @@ const CATEGORY_META = {
     engineering_lead: { label: "⚡ Engineering Lead", class: "badge-lead" }
 };
 
+// Relative time helper
+function formatRelativeTime(dateStr) {
+    if (!dateStr) return "recent";
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    if (diffHours < 1) return "just now";
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return "1d ago";
+    if (diffDays <= 7) return `${diffDays}d ago`;
+    return `${Math.floor(diffDays / 7)}w ago`;
+}
+
 export default function DMQueue({ appliedList = [] }) {
-    const [leads, setLeads] = useState([]);
+    const [rawLeads, setRawLeads] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES.ALL);
     const [searchQuery, setSearchQuery] = useState("");
     const [copiedId, setCopiedId] = useState(null);
+    const [expandedDmIds, setExpandedDmIds] = useState(new Set());
 
     useEffect(() => {
-        const unsubscribe = listenToDmLeads(setLeads);
+        const unsubscribe = listenToDmLeads(setRawLeads);
         return () => unsubscribe && unsubscribe();
     }, []);
 
@@ -41,6 +56,17 @@ export default function DMQueue({ appliedList = [] }) {
             .trim();
     };
 
+    // STRICT REQUIREMENT 1: 1 Person per Company
+    const leads = [];
+    const seenCompanyKeys = new Set();
+    rawLeads.forEach(lead => {
+        const compKey = normalizeComp(lead.company || "Other");
+        if (!seenCompanyKeys.has(compKey)) {
+            seenCompanyKeys.add(compKey);
+            leads.push(lead);
+        }
+    });
+
     // Helper: Find if this lead's company was previously applied for
     const getMatchedApplication = (leadCompany) => {
         if (!leadCompany || !appliedList.length) return null;
@@ -52,6 +78,15 @@ export default function DMQueue({ appliedList = [] }) {
             const cleanApp = normalizeComp(app.company);
             if (!cleanApp) return false;
             return cleanApp === cleanLead || cleanApp.includes(cleanLead) || cleanLead.includes(cleanApp);
+        });
+    };
+
+    const toggleExpandDm = (id) => {
+        setExpandedDmIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
         });
     };
 
@@ -132,7 +167,7 @@ export default function DMQueue({ appliedList = [] }) {
                         <h2>DM Outreach Queue</h2>
                     </div>
                     <p className="action-queue-subtitle">
-                        {leads.length} {leads.length === 1 ? "decision maker" : "decision makers"} ready for 1-click tailored outreach
+                        {leads.length} {leads.length === 1 ? "decision maker" : "decision makers"} in India (1 contact per company) ready for 1-click outreach
                     </p>
                 </div>
                 <div className="queue-header-actions">
@@ -220,6 +255,8 @@ export default function DMQueue({ appliedList = [] }) {
                         const isCopied = copiedId === lead.id;
                         const isContacted = lead.status === "Contacted";
                         const isReplied = lead.status === "Replied";
+                        const isExpanded = expandedDmIds.has(lead.id);
+                        const timeAgo = formatRelativeTime(lead.sourceDate || lead.createdAt);
 
                         return (
                             <div
@@ -246,15 +283,20 @@ export default function DMQueue({ appliedList = [] }) {
                                                 </span>
                                             )}
                                         </div>
-                                        <span className="cell-name-span">{lead.title} • <strong>{lead.company}</strong></span>
+                                        <div className="dm-title-time-row">
+                                            <span className="cell-name-span">{lead.title} • <strong>{lead.company}</strong></span>
+                                            <span className="dm-time-ago-tag" title={`Discovered / posted ${timeAgo}`}>
+                                                <FiClock className="time-icon" /> {timeAgo}
+                                            </span>
+                                        </div>
                                     </div>
                                     <button
                                         type="button"
-                                        className="table-button-delete dm-delete-icon-btn"
+                                        className="dm-large-delete-btn"
                                         onClick={() => handleDelete(lead.id, lead.name)}
                                         title="Dismiss Lead"
                                     >
-                                        <FiTrash2 />
+                                        <FiTrash2 className="dm-trash-icon" />
                                     </button>
                                 </div>
 
@@ -275,15 +317,27 @@ export default function DMQueue({ appliedList = [] }) {
                                 {/* Discovery Signal */}
                                 {lead.sourceSnippet && (
                                     <div className="dm-signal-callout">
-                                        <span className="dm-signal-label">Discovery Signal</span>
+                                        <span className="dm-signal-label">Discovery Signal ({timeAgo})</span>
                                         <p className="dm-signal-text">"{lead.sourceSnippet}"</p>
                                     </div>
                                 )}
 
-                                {/* Pre-drafted DM Box */}
-                                <div className="dm-message-box">
+                                {/* Collapsible Pre-drafted DM Box */}
+                                <div className={`dm-message-box ${isExpanded ? "expanded" : "collapsed"}`}>
                                     <div className="dm-message-header">
-                                        <span className="dm-message-label">📝 Pre-Drafted DM</span>
+                                        <button
+                                            type="button"
+                                            className="dm-expand-toggle-btn"
+                                            onClick={() => toggleExpandDm(lead.id)}
+                                        >
+                                            <span className="dm-message-label">📝 Pre-Drafted DM</span>
+                                            {isExpanded ? (
+                                                <span className="dm-toggle-text"><FiChevronUp /> Collapse</span>
+                                            ) : (
+                                                <span className="dm-toggle-text"><FiChevronDown /> Expand message</span>
+                                            )}
+                                        </button>
+
                                         <button
                                             type="button"
                                             className={`action-queue-apply-btn dm-copy-btn ${isCopied ? "copied" : ""}`}
@@ -295,12 +349,25 @@ export default function DMQueue({ appliedList = [] }) {
                                                 </>
                                             ) : (
                                                 <>
-                                                    <FiCopy /> Copy 1-Click DM
+                                                    <FiCopy /> Copy DM
                                                 </>
                                             )}
                                         </button>
                                     </div>
-                                    <pre className="dm-pre-text">{lead.tailoredDm}</pre>
+
+                                    {isExpanded ? (
+                                        <pre className="dm-pre-text">{lead.tailoredDm}</pre>
+                                    ) : (
+                                        <div
+                                            className="dm-collapsed-preview"
+                                            onClick={() => toggleExpandDm(lead.id)}
+                                            title="Click to expand message"
+                                        >
+                                            <p className="dm-preview-snippet">
+                                                {lead.tailoredDm.split("\n")[0]}... <span className="dm-click-to-read">(click to read full)</span>
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Footer Actions */}
@@ -348,5 +415,6 @@ export default function DMQueue({ appliedList = [] }) {
         </section>
     );
 }
+
 
 

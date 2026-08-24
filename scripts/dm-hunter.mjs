@@ -81,83 +81,117 @@ export function resolveCompanyLogoUrl(company = "") {
   return `https://unavatar.io/${domain}?fallback=https://logo.clearbit.com/${domain}`;
 }
 
-// 4. Decision Maker Lookup (via Firecrawl Search)
+// Check if candidate/person is based in India or Indian origin
+function isIndiaBased(url = "", snippet = "", title = "") {
+  const text = `${url} ${snippet} ${title}`.toLowerCase();
+  const indiaKeywords = [
+    "in.linkedin.com", "india", "bengaluru", "bangalore", "gurgaon", "gurugram", 
+    "delhi", "mumbai", "noida", "hyderabad", "pune", "chennai", "kolkata", "ahmedabad",
+    "iit", "nit", "bits pilani"
+  ];
+  return indiaKeywords.some(kw => text.includes(kw));
+}
+
+// 4. Decision Maker Lookup (Strictly 1 India-based contact per company)
 export async function lookupDecisionMakers(companyName) {
-  if (!companyName || !firecrawl) return [];
+  if (!companyName || !firecrawl) return null;
   const cleanCompany = companyName
     .replace(/\s*(?:in india|technologies|solutions|inc|pvt|ltd|interactive|software|tech|llc|gmbh).*$/i, "")
     .trim();
 
-  const query = `site:linkedin.com/in "${cleanCompany}" ("CTO" OR "Founder" OR "Co-Founder" OR "Engineering Manager" OR "Head of Engineering" OR "Engineering Lead")`;
+  // Specifically target India profiles
+  const query = `(site:in.linkedin.com/in OR (site:linkedin.com/in "India")) "${cleanCompany}" ("CTO" OR "Founder" OR "Co-Founder" OR "Engineering Manager" OR "Head of Engineering" OR "Engineering Lead")`;
   
   try {
-    const res = await firecrawl.search(query, { limit: 3 });
+    const res = await firecrawl.search(query, { limit: 4 });
     const items = res.web || [];
-    const matches = [];
+
+    const candidates = [];
 
     for (const item of items) {
       if (!item.url || !item.url.includes("linkedin.com/in/")) continue;
 
-      // Extract Name and Title from item.title
-      // Format usually: "Name - Title @ Company" or "Name - Title - Company | LinkedIn"
       const cleanTitle = (item.title || "").replace(/\s*\|\s*LinkedIn.*$/i, "").trim();
       const parts = cleanTitle.split(/[-–—@|]/).map(p => p.trim());
 
       let name = parts[0] || "Hiring Lead";
       let role = parts.slice(1).join(" - ") || "Engineering Leader";
 
-      // Filter out non-person titles
       if (name.toLowerCase().includes("top") || name.toLowerCase().includes("jobs") || name.toLowerCase().includes("profile")) continue;
 
-      // Determine category based on role
-      let category = "queued_job";
+      // Filter for India connection
+      if (!isIndiaBased(item.url, item.description, item.title)) {
+        continue;
+      }
+
+      // Priority ranking: Founder/CTO (3) > Head of Eng (2) > EM/Lead (1)
+      let score = 1;
+      let category = "engineering_lead";
       const lowerRole = role.toLowerCase();
       if (lowerRole.includes("founder") || lowerRole.includes("ceo") || lowerRole.includes("cto")) {
+        score = 3;
         category = "queued_job";
-      } else if (lowerRole.includes("engineering manager") || lowerRole.includes("lead") || lowerRole.includes("head of")) {
+      } else if (lowerRole.includes("head of") || lowerRole.includes("director") || lowerRole.includes("vp")) {
+        score = 2;
         category = "engineering_lead";
       }
 
-      matches.push({
-        name: name,
+      candidates.push({
+        name,
         title: role,
         company: cleanCompany,
         linkedinUrl: item.url,
-        category: category,
-        snippet: item.description || `Engineering Leader at ${cleanCompany}`
+        category,
+        snippet: item.description || `Engineering Leader at ${cleanCompany}`,
+        score
       });
     }
 
-    return matches;
+    if (candidates.length === 0) return null;
+
+    // Pick single highest ranked contact
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates[0];
   } catch (err) {
     console.warn(`Decision maker search warning for ${companyName}:`, err.message);
-    return [];
+    return null;
   }
 }
 
-// 5. Recent Funding Round Hunter (Inc42 & TechCrunch Feeds)
+// 5. Recent Funding Round Hunter (Filtered strictly for <= 7 days old)
 export async function huntRecentFundingLeads() {
   const fundingLeads = [];
   const feeds = [
-    "https://techcrunch.com/category/startups/feed/",
-    "https://inc42.com/feed/"
+    "https://inc42.com/feed/",
+    "https://techcrunch.com/category/startups/feed/"
   ];
+
+  const now = new Date();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
   for (const feedUrl of feeds) {
     try {
-      const res = await fetch(feedUrl, { signal: AbortSignal.timeout(5000) });
+      const res = await fetch(feedUrl, { signal: AbortSignal.timeout(6000) });
       if (!res.ok) continue;
       const xml = await res.text();
 
       const items = xml.match(/<item>[\s\S]*?<\/item>/gi) || [];
-      for (const item of items.slice(0, 10)) {
+      for (const item of items.slice(0, 15)) {
         const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/i) || item.match(/<title>([\s\S]*?)<\/title>/i);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/i);
         const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/i) || item.match(/<description>([\s\S]*?)<\/description>/i);
+        const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
 
         const title = titleMatch ? titleMatch[1].trim() : "";
         const link = linkMatch ? linkMatch[1].trim() : "";
         const desc = descMatch ? descMatch[1].replace(/<[^>]+>/g, "").trim() : "";
+        const pubDateStr = dateMatch ? dateMatch[1].trim() : "";
+        const pubDate = pubDateStr ? new Date(pubDateStr) : new Date();
+
+        // 7-day recency filter
+        if (now.getTime() - pubDate.getTime() > SEVEN_DAYS_MS) {
+          continue;
+        }
 
         if (/raises|secures|bags|closes|funding|seed|series a|series-a|million/i.test(title)) {
           const compMatch = title.match(/^([A-Za-z0-9\s]+?)\s+(?:raises|secures|bags|closes|gets)/i);
@@ -167,6 +201,7 @@ export async function huntRecentFundingLeads() {
               company: companyName,
               sourceSnippet: title,
               sourceUrl: link,
+              sourceDate: pubDate.toISOString(),
               desc: desc.slice(0, 200)
             });
           }
@@ -178,10 +213,10 @@ export async function huntRecentFundingLeads() {
   return fundingLeads;
 }
 
-// 6. Direct Hiring Posts Scanner (LinkedIn / X public posts)
+// 6. Direct Hiring Posts Scanner (Filtered strictly for <= 7 days old India posts)
 export async function huntPublicHiringPosts() {
   if (!firecrawl) return [];
-  const query = `site:linkedin.com/posts ("hiring" OR "looking for") ("frontend" OR "react") ("DM me" OR "reach out" OR "send resume")`;
+  const query = `site:in.linkedin.com/posts ("hiring" OR "looking for") ("frontend" OR "react") ("DM me" OR "reach out" OR "send resume")`;
   try {
     const res = await firecrawl.search(query, { limit: 4 });
     const items = res.web || [];
@@ -193,7 +228,8 @@ export async function huntPublicHiringPosts() {
       const name = parts[0] || "Hiring Lead";
       const snippet = item.description || cleanTitle;
 
-      // Extract possible company
+      if (!isIndiaBased(item.url, snippet, cleanTitle)) continue;
+
       const compMatch = cleanTitle.match(/(?:at|@)\s+([A-Za-z0-9\s]+)/i);
       const company = compMatch ? compMatch[1].trim() : "Tech Startup";
 
@@ -203,7 +239,8 @@ export async function huntPublicHiringPosts() {
         company: company,
         linkedinUrl: item.url,
         category: "hiring_post",
-        sourceSnippet: snippet.slice(0, 220)
+        sourceSnippet: snippet.slice(0, 220),
+        sourceDate: new Date().toISOString()
       });
     }
     return postLeads;
@@ -234,7 +271,7 @@ export async function sendDmDiscordNotification(lead) {
     embeds: [
       {
         title: `🎯 High-Signal DM Lead: ${lead.name}`,
-        description: `**${lead.title}** at **${lead.company}**\n\n💬 **Discovery Signal:**\n> _${lead.sourceSnippet || "Direct engineering hiring leader"}_`,
+        description: `**${lead.title}** at **${lead.company}** (India 🇮🇳)\n\n💬 **Discovery Signal:**\n> _${lead.sourceSnippet || "Direct engineering hiring leader"}_`,
         color: categoryColors[lead.category] || 0x2563eb,
         fields: [
           {
@@ -273,46 +310,67 @@ export async function sendDmDiscordNotification(lead) {
   }
 }
 
-// 8. Main Runner
+// 8. Main Runner (Strict 1 person per company & <= 7 days recency)
 export async function runDmHunter() {
-  console.log("🔍 Scanning for Founders, CTOs & Engineering Leaders for your DM Queue...\n");
+  console.log("🔍 Scanning for India-based Founders, CTOs & Engineering Leaders (1 person per company, <= 7 days old)...\n");
 
-  const existingSnapshot = await db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads").get();
-  const existingUrls = new Set();
-  const existingKeys = new Set();
+  const leadsRef = db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads");
+  const existingSnapshot = await leadsRef.get();
+  
+  // Clean up duplicate companies in Firestore so strictly 1 contact exists per company
+  const companyMap = new Map();
+  const docsToDelete = [];
 
   existingSnapshot.docs.forEach(doc => {
-    const d = doc.data();
-    if (d.linkedinUrl) existingUrls.add(d.linkedinUrl.toLowerCase().trim());
-    if (d.company && d.name) existingKeys.add(`${d.company.toLowerCase()}::${d.name.toLowerCase()}`);
+    const data = doc.data();
+    const compKey = (data.company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!compKey) {
+      docsToDelete.push(doc.id);
+      return;
+    }
+
+    if (companyMap.has(compKey)) {
+      docsToDelete.push(doc.id); // keep the first one, delete duplicate
+    } else {
+      companyMap.set(compKey, doc.id);
+    }
   });
 
+  if (docsToDelete.length > 0) {
+    console.log(`🧹 Pruning ${docsToDelete.length} duplicate contacts to enforce 1 person per company...`);
+    for (const docId of docsToDelete) {
+      await leadsRef.doc(docId).delete();
+    }
+  }
+
+  const existingCompanies = new Set(companyMap.keys());
   let newLeadsCount = 0;
 
-  // STEP A: Resolve Decision Makers for active Applications & Queued Jobs
-  console.log("📌 Step A: Resolving Decision Makers for active Applications & Queued Jobs...");
+  // STEP A: Resolve 1 Decision Maker for active Applications & Queued Jobs
+  console.log("📌 Step A: Resolving 1 India Decision Maker per active tracked company...");
   const recentAppsSnapshot = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications")
-    .limit(15)
+    .limit(20)
     .get();
 
   const activeCompanies = [];
   recentAppsSnapshot.forEach(doc => {
     const data = doc.data();
-    if (data.company && !activeCompanies.includes(data.company) && data.status !== "Dismissed") {
-      activeCompanies.push(data.company);
+    if (data.company && data.status !== "Dismissed") {
+      const compKey = data.company.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (!existingCompanies.has(compKey) && !activeCompanies.includes(data.company)) {
+        activeCompanies.push(data.company);
+      }
     }
   });
 
   for (const company of activeCompanies.slice(0, 8)) {
-    console.log(`🔎 Looking up CTO / Engineering Leads for: ${company}...`);
-    const people = await lookupDecisionMakers(company);
+    const compKey = company.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (existingCompanies.has(compKey)) continue;
 
-    for (const person of people) {
-      const key = `${person.company.toLowerCase()}::${person.name.toLowerCase()}`;
-      if (existingUrls.has(person.linkedinUrl.toLowerCase().trim()) || existingKeys.has(key)) {
-        continue;
-      }
+    console.log(`🔎 Looking up India CTO / EM for: ${company}...`);
+    const person = await lookupDecisionMakers(company);
 
+    if (person) {
       const tailoredDm = generateTailoredDm(person.category, person.name, person.company);
       const leadData = {
         name: person.name,
@@ -322,35 +380,33 @@ export async function runDmHunter() {
         linkedinUrl: person.linkedinUrl,
         category: person.category,
         sourceSnippet: person.snippet || `Engineering Leader at ${person.company}`,
+        sourceDate: new Date().toISOString(),
         tailoredDm: tailoredDm,
         status: "New",
         createdAt: new Date().toISOString()
       };
 
-      const docRef = await db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads").add(leadData);
+      const docRef = await leadsRef.add(leadData);
       console.log(`✅ [${person.category}] Added ${person.name} (${person.title} @ ${person.company}) [ID: ${docRef.id}]`);
       
-      existingUrls.add(person.linkedinUrl.toLowerCase().trim());
-      existingKeys.add(key);
+      existingCompanies.add(compKey);
       newLeadsCount++;
 
       await sendDmDiscordNotification(leadData);
     }
   }
 
-  // STEP B: Hunt for Recently Funded Startups
-  console.log("\n💰 Step B: Checking Recent Startup Funding Rounds...");
+  // STEP B: Hunt for Recently Funded Indian Startups (<= 7 days old)
+  console.log("\n💰 Step B: Checking Recent Startup Funding Rounds (<= 7 days old)...");
   const fundingItems = await huntRecentFundingLeads();
-  for (const fund of fundingItems.slice(0, 3)) {
-    console.log(`🔎 Looking up Founders/CTO for recently funded startup: ${fund.company}...`);
-    const people = await lookupDecisionMakers(fund.company);
+  for (const fund of fundingItems.slice(0, 5)) {
+    const compKey = fund.company.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (existingCompanies.has(compKey)) continue;
 
-    for (const person of people) {
-      const key = `${person.company.toLowerCase()}::${person.name.toLowerCase()}`;
-      if (existingUrls.has(person.linkedinUrl.toLowerCase().trim()) || existingKeys.has(key)) {
-        continue;
-      }
+    console.log(`🔎 Looking up Founder/CTO for recently funded startup: ${fund.company}...`);
+    const person = await lookupDecisionMakers(fund.company);
 
+    if (person) {
       const tailoredDm = generateTailoredDm("recent_funding", person.name, person.company);
       const leadData = {
         name: person.name,
@@ -361,30 +417,28 @@ export async function runDmHunter() {
         category: "recent_funding",
         sourceSnippet: fund.sourceSnippet,
         sourceUrl: fund.sourceUrl,
+        sourceDate: fund.sourceDate || new Date().toISOString(),
         tailoredDm: tailoredDm,
         status: "New",
         createdAt: new Date().toISOString()
       };
 
-      const docRef = await db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads").add(leadData);
+      const docRef = await leadsRef.add(leadData);
       console.log(`✅ [Recent Funding] Added ${person.name} (${person.title} @ ${person.company}) [ID: ${docRef.id}]`);
 
-      existingUrls.add(person.linkedinUrl.toLowerCase().trim());
-      existingKeys.add(key);
+      existingCompanies.add(compKey);
       newLeadsCount++;
 
       await sendDmDiscordNotification(leadData);
     }
   }
 
-  // STEP C: Hunt for Direct Hiring Posts on LinkedIn
-  console.log("\n🚀 Step C: Checking Direct Founder & Recruiter Hiring Posts...");
+  // STEP C: Hunt for Direct Hiring Posts on LinkedIn India (<= 7 days old)
+  console.log("\n🚀 Step C: Checking Direct Founder & Hiring Posts in India (<= 7 days old)...");
   const postLeads = await huntPublicHiringPosts();
   for (const lead of postLeads) {
-    const key = `${lead.company.toLowerCase()}::${lead.name.toLowerCase()}`;
-    if (existingUrls.has(lead.linkedinUrl.toLowerCase().trim()) || existingKeys.has(key)) {
-      continue;
-    }
+    const compKey = lead.company.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (existingCompanies.has(compKey)) continue;
 
     const tailoredDm = generateTailoredDm("hiring_post", lead.name, lead.company);
     const leadData = {
@@ -395,22 +449,22 @@ export async function runDmHunter() {
       linkedinUrl: lead.linkedinUrl,
       category: "hiring_post",
       sourceSnippet: lead.sourceSnippet,
+      sourceDate: lead.sourceDate || new Date().toISOString(),
       tailoredDm: tailoredDm,
       status: "New",
       createdAt: new Date().toISOString()
     };
 
-    const docRef = await db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads").add(leadData);
+    const docRef = await leadsRef.add(leadData);
     console.log(`✅ [Hiring Post] Added ${lead.name} (${lead.company}) [ID: ${docRef.id}]`);
 
-    existingUrls.add(lead.linkedinUrl.toLowerCase().trim());
-    existingKeys.add(key);
+    existingCompanies.add(compKey);
     newLeadsCount++;
 
     await sendDmDiscordNotification(leadData);
   }
 
-  console.log(`\n🎉 DM Hunter completed! Successfully added ${newLeadsCount} new high-conviction DM leads.`);
+  console.log(`\n🎉 DM Hunter completed! Added ${newLeadsCount} new India-based 1-per-company DM leads.`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

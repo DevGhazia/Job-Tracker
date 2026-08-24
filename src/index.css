@@ -1579,9 +1579,55 @@ nav{
   text-overflow: ellipsis;
 }
 
-.dm-delete-icon-btn {
+.dm-title-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.dm-time-ago-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border-muted);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.time-icon {
+  font-size: 0.75rem;
+}
+
+.dm-large-delete-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  color: var(--text-muted);
+  cursor: pointer;
   margin-left: auto;
   flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.dm-large-delete-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  transform: scale(1.05);
+}
+
+.dm-trash-icon {
+  font-size: 1.15rem;
 }
 
 /* Signal Callout */
@@ -1610,7 +1656,7 @@ nav{
   font-style: italic;
 }
 
-/* Message Box */
+/* Collapsible Message Box */
 .dm-message-box {
   background: var(--bg);
   border: var(--defaul-border-muted);
@@ -1619,6 +1665,7 @@ nav{
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  transition: all 0.2s ease;
 }
 
 .dm-message-header {
@@ -1628,11 +1675,58 @@ nav{
   gap: 0.5rem;
 }
 
+.dm-expand-toggle-btn {
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
 .dm-message-label {
   font: var(--small);
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-muted);
+}
+
+.dm-toggle-text {
+  font: var(--small);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--button);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.dm-toggle-text:hover {
+  text-decoration: underline;
+}
+
+.dm-collapsed-preview {
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+
+.dm-preview-snippet {
+  margin: 0;
+  font: var(--small);
+  font-size: 0.78rem;
+  font-family: var(--ff);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-click-to-read {
+  color: var(--button);
+  font-weight: 600;
+  font-size: 0.74rem;
 }
 
 .dm-copy-btn {
@@ -1656,7 +1750,7 @@ nav{
   line-height: 1.4;
   color: var(--text);
   white-space: pre-wrap;
-  max-height: 95px;
+  max-height: 110px;
   overflow-y: auto;
   padding-top: 0.2rem;
 }
