@@ -102,6 +102,59 @@ export const updateApplication = async (id, fieldName, fieldValue) => {
     });
 };
 
+export const listenToDmLeads = (callback) => {
+    let unsubscribeSnapshot;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+        if (!user) return;
+
+        const ref = collection(db, "users", user.uid, "dm_leads");
+        unsubscribeSnapshot = onSnapshot(ref, (snapshot) => {
+            const leads = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            callback(leads);
+        });
+    });
+
+    return () => {
+        unsubscribeAuth();
+        unsubscribeSnapshot && unsubscribeSnapshot();
+    };
+};
+
+export const updateDmLeadStatus = async (id, status) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const ref = doc(db, "users", user.uid, "dm_leads", id);
+    await updateDoc(ref, {
+        status: status,
+        updatedAt: new Date().toISOString(),
+        ...(status === "Contacted" ? { contactedAt: new Date().toISOString() } : {})
+    });
+};
+
+export const deleteDmLead = async (id) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const ref = doc(db, "users", user.uid, "dm_leads", id);
+    await deleteDoc(ref);
+};
+
+export const addDmLead = async (data) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not logged in");
+
+    const ref = collection(db, "users", user.uid, "dm_leads");
+    await addDoc(ref, {
+        ...data,
+        createdAt: new Date().toISOString()
+    });
+};
+
 export default async function handleGoogleLogin() {
     try {
         await signInWithPopup(auth, googleProvider);
@@ -110,3 +163,4 @@ export default async function handleGoogleLogin() {
         console.error(err);
     }
 }
+

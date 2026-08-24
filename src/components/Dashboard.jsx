@@ -1,6 +1,7 @@
 import AddCompany from "./AddCompany";
 import ApplicationsTable from "./ApplicationsTable";
 import ActionQueue from "./ActionQueue";
+import DMQueue from "./DMQueue";
 import { useEffect, useState } from "react";
 import { addApplication, deleteApplication, dismissApplication, clearAllQueuedApplications, listenToApplications, updateApplication } from "../utils_firebase";
 import { Statitics } from "./Statitics";
@@ -117,6 +118,9 @@ const Dashboard = () => {
                 onDelete={handleDismissQueue}
                 onClearAll={handleClearAllQueue}
             />
+
+            {/* 💬 DM Outreach Queue for direct founder & hiring manager outreach */}
+            <DMQueue />
 
             {showModal && (
                 <div className="overlay" onClick={() => setShowModel(false)}>
