@@ -98,10 +98,6 @@ export default function DMQueue() {
         }
     };
 
-    if (leads.length === 0) {
-        return null; // Hidden if empty until first scan populates it
-    }
-
     return (
         <div className="dm-queue-container">
             <div className="dm-queue-header">
@@ -117,61 +113,74 @@ export default function DMQueue() {
                 </div>
 
                 {/* Category Filter Pills */}
-                <div className="dm-category-pills">
-                    <button
-                        className={`dm-pill ${selectedCategory === CATEGORIES.ALL ? "active" : ""}`}
-                        onClick={() => setSelectedCategory(CATEGORIES.ALL)}
-                    >
-                        All ({counts.all})
-                    </button>
-                    {counts.queued_job > 0 && (
+                {leads.length > 0 && (
+                    <div className="dm-category-pills">
                         <button
-                            className={`dm-pill pill-queued ${selectedCategory === CATEGORIES.QUEUED_JOB ? "active" : ""}`}
-                            onClick={() => setSelectedCategory(CATEGORIES.QUEUED_JOB)}
+                            className={`dm-pill ${selectedCategory === CATEGORIES.ALL ? "active" : ""}`}
+                            onClick={() => setSelectedCategory(CATEGORIES.ALL)}
                         >
-                            📌 Queued Job Contacts ({counts.queued_job})
+                            All ({counts.all})
                         </button>
-                    )}
-                    {counts.hiring_post > 0 && (
-                        <button
-                            className={`dm-pill pill-hiring ${selectedCategory === CATEGORIES.HIRING_POST ? "active" : ""}`}
-                            onClick={() => setSelectedCategory(CATEGORIES.HIRING_POST)}
-                        >
-                            🚀 Hiring Posts ({counts.hiring_post})
-                        </button>
-                    )}
-                    {counts.recent_funding > 0 && (
-                        <button
-                            className={`dm-pill pill-funding ${selectedCategory === CATEGORIES.RECENT_FUNDING ? "active" : ""}`}
-                            onClick={() => setSelectedCategory(CATEGORIES.RECENT_FUNDING)}
-                        >
-                            💰 Recent Funding ({counts.recent_funding})
-                        </button>
-                    )}
-                    {counts.engineering_lead > 0 && (
-                        <button
-                            className={`dm-pill pill-lead ${selectedCategory === CATEGORIES.ENGINEERING_LEAD ? "active" : ""}`}
-                            onClick={() => setSelectedCategory(CATEGORIES.ENGINEERING_LEAD)}
-                        >
-                            ⚡ Engineering Leads ({counts.engineering_lead})
-                        </button>
-                    )}
-                </div>
+                        {counts.queued_job > 0 && (
+                            <button
+                                className={`dm-pill pill-queued ${selectedCategory === CATEGORIES.QUEUED_JOB ? "active" : ""}`}
+                                onClick={() => setSelectedCategory(CATEGORIES.QUEUED_JOB)}
+                            >
+                                📌 Queued Job Contacts ({counts.queued_job})
+                            </button>
+                        )}
+                        {counts.hiring_post > 0 && (
+                            <button
+                                className={`dm-pill pill-hiring ${selectedCategory === CATEGORIES.HIRING_POST ? "active" : ""}`}
+                                onClick={() => setSelectedCategory(CATEGORIES.HIRING_POST)}
+                            >
+                                🚀 Hiring Posts ({counts.hiring_post})
+                            </button>
+                        )}
+                        {counts.recent_funding > 0 && (
+                            <button
+                                className={`dm-pill pill-funding ${selectedCategory === CATEGORIES.RECENT_FUNDING ? "active" : ""}`}
+                                onClick={() => setSelectedCategory(CATEGORIES.RECENT_FUNDING)}
+                            >
+                                💰 Recent Funding ({counts.recent_funding})
+                            </button>
+                        )}
+                        {counts.engineering_lead > 0 && (
+                            <button
+                                className={`dm-pill pill-lead ${selectedCategory === CATEGORIES.ENGINEERING_LEAD ? "active" : ""}`}
+                                onClick={() => setSelectedCategory(CATEGORIES.ENGINEERING_LEAD)}
+                            >
+                                ⚡ Engineering Leads ({counts.engineering_lead})
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* Search Bar */}
-                <div className="dm-search-bar-row">
-                    <input
-                        type="text"
-                        placeholder="Search leads by name, company, or title..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="dm-search-input"
-                    />
-                </div>
+                {leads.length > 0 && (
+                    <div className="dm-search-bar-row">
+                        <input
+                            type="text"
+                            placeholder="Search leads by name, company, or title..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="dm-search-input"
+                        />
+                    </div>
+                )}
             </div>
 
-            {/* Cards Grid */}
-            <div className="dm-cards-grid">
+            {leads.length === 0 ? (
+                <div className="dm-empty-state" style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted, #64748b)" }}>
+                    <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600 }}>🔍 No active DM leads found right now.</p>
+                    <p style={{ margin: "0.35rem 0 0 0", fontSize: "0.85rem" }}>Run <code>node scripts/dm-hunter.mjs</code> or wait for the next scheduled executive scan.</p>
+                </div>
+            ) : filteredLeads.length === 0 ? (
+                <div className="dm-empty-state" style={{ textAlign: "center", padding: "1.5rem 1rem", color: "var(--text-muted, #64748b)" }}>
+                    <p style={{ margin: 0, fontSize: "0.9rem" }}>No leads match the selected filter.</p>
+                </div>
+            ) : (
+                <div className="dm-cards-grid">
                 {filteredLeads.map((lead) => {
                     const meta = CATEGORY_META[lead.category] || CATEGORY_META.queued_job;
                     const isCopied = copiedId === lead.id;
@@ -279,6 +288,7 @@ export default function DMQueue() {
                     );
                 })}
             </div>
+            )}
         </div>
     );
 }
