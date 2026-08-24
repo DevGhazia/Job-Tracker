@@ -26,6 +26,10 @@ jobs:
         env:
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_JOBS_WEBHOOK_URL: ${{ secrets.DISCORD_JOBS_WEBHOOK_URL }}
+          DISCORD_DM_WEBHOOK_URL: ${{ secrets.DISCORD_DM_WEBHOOK_URL }}
           WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
           WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
-        run: node scripts/search-and-queue.mjs
+        run: |
+          node scripts/search-and-queue.mjs
+          node scripts/dm-hunter.mjs

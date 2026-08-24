@@ -68,7 +68,7 @@ export async function sendTelegramNotification(message) {
 }
 
 export async function sendDiscordNotification(payload) {
-  const webhookUrl = getEnvVar("DISCORD_WEBHOOK_URL");
+  const webhookUrl = getEnvVar("DISCORD_JOBS_WEBHOOK_URL") || getEnvVar("DISCORD_WEBHOOK_URL");
   if (!webhookUrl) return;
 
   try {

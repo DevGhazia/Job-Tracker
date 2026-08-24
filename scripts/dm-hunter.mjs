@@ -25,17 +25,26 @@ if (!getApps().length) {
 const db = getFirestore();
 const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
-function getDiscordWebhookUrl() {
+function getDiscordDmWebhookUrl() {
+  if (process.env.DISCORD_DM_WEBHOOK_URL) return process.env.DISCORD_DM_WEBHOOK_URL;
+  try {
+    const envFile = readFileSync(resolve(rootDir, ".env"), "utf-8");
+    const m = envFile.match(/DISCORD_DM_WEBHOOK_URL\s*[:=]\s*([^\r\n]+)/);
+    if (m && m[1].trim()) return m[1].trim();
+  } catch {}
+
+  // Fallback to general DISCORD_WEBHOOK_URL
   if (process.env.DISCORD_WEBHOOK_URL) return process.env.DISCORD_WEBHOOK_URL;
   try {
     const envFile = readFileSync(resolve(rootDir, ".env"), "utf-8");
     const m = envFile.match(/DISCORD_WEBHOOK_URL\s*[:=]\s*([^\r\n]+)/);
-    if (m) return m[1].trim();
+    if (m && m[1].trim()) return m[1].trim();
   } catch {}
+
   return "https://discord.com/api/webhooks/1539211263282909195/7XIyouaKp8OuiFK_nmiKUotYnVf9EypY420N6wtu1_RlSO8fNQ7wEAdg80ZIrbGfOaQw";
 }
 
-const DISCORD_WEBHOOK_URL = getDiscordWebhookUrl();
+const DISCORD_DM_WEBHOOK_URL = getDiscordDmWebhookUrl();
 
 function getFirecrawlApiKey() {
   if (process.env.FIRECRAWL_API_KEY) return process.env.FIRECRAWL_API_KEY;
@@ -249,9 +258,9 @@ export async function huntPublicHiringPosts() {
   }
 }
 
-// 7. Discord Notification
+// 7. Discord Notification (Dispatched to dedicated DM Queue channel)
 export async function sendDmDiscordNotification(lead) {
-  if (!DISCORD_WEBHOOK_URL) return;
+  if (!DISCORD_DM_WEBHOOK_URL) return;
 
   const categoryLabels = {
     hiring_post: "🟣 🚀 Founder Hiring Post",
@@ -299,12 +308,12 @@ export async function sendDmDiscordNotification(lead) {
   };
 
   try {
-    await fetch(DISCORD_WEBHOOK_URL, {
+    await fetch(DISCORD_DM_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    console.log(`🎮 Discord DM notification sent for ${lead.name} (${lead.company})`);
+    console.log(`🎮 Discord DM notification sent to dedicated DM channel for ${lead.name} (${lead.company})`);
   } catch (err) {
     console.error("Failed to send Discord DM notification:", err.message);
   }
