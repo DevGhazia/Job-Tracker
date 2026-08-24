@@ -21,18 +21,29 @@ const CATEGORY_META = {
     engineering_lead: { label: "⚡ Engineering Lead", class: "badge-lead" }
 };
 
-// Relative time helper
+// Relative time helper from original source/post/application date
 function formatRelativeTime(dateStr) {
     if (!dateStr) return "recent";
     const now = new Date();
     const date = new Date(dateStr);
-    const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    if (diffHours < 1) return "just now";
+    if (isNaN(date.getTime())) return "recent";
+
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return "just now";
+
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 1) {
+        const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+        return `${diffMins}m ago`;
+    }
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays === 1) return "1d ago";
-    if (diffDays <= 7) return `${diffDays}d ago`;
-    return `${Math.floor(diffDays / 7)}w ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    const diffWeeks = Math.floor(diffDays / 7);
+    if (diffWeeks <= 4) return `${diffWeeks}w ago`;
+    const diffMonths = Math.floor(diffDays / 30);
+    return `${diffMonths}mo ago`;
 }
 
 export default function DMQueue({ appliedList = [] }) {
@@ -256,7 +267,12 @@ export default function DMQueue({ appliedList = [] }) {
                         const isContacted = lead.status === "Contacted";
                         const isReplied = lead.status === "Replied";
                         const isExpanded = expandedDmIds.has(lead.id);
-                        const timeAgo = formatRelativeTime(lead.sourceDate || lead.createdAt);
+                        
+                        // Origin time of the actual post / funding round / application
+                        const originDate = (lead.category === "queued_job" || lead.category === "engineering_lead") && matchedApp
+                            ? (matchedApp.date || lead.sourceDate || lead.createdAt)
+                            : (lead.sourceDate || lead.createdAt);
+                        const timeAgo = formatRelativeTime(originDate);
 
                         return (
                             <div
@@ -269,25 +285,25 @@ export default function DMQueue({ appliedList = [] }) {
                                         <CompanyLogo logo={lead.companyLogo} company={lead.company} />
                                     </div>
                                     <div className="cell-name dm-card-name-block">
-                                        <div className="queue-row-headline">
-                                            <h3>{lead.name}</h3>
+                                        <h3 className="dm-card-name">{lead.name}</h3>
+                                        <p className="dm-card-subtitle">{lead.title} • <strong>{lead.company}</strong></p>
+                                        
+                                        {/* All tags aligned in a single neat row */}
+                                        <div className="dm-tags-single-row">
                                             <span className={`portal-badge ${meta.class}`}>
                                                 {meta.label}
                                             </span>
-                                            {matchedApp && (
-                                                <span
-                                                    className="dm-applied-star-badge"
-                                                    title={`You applied to ${matchedApp.company} on ${formateDate(matchedApp.date)} (Current Status: ${matchedApp.status})`}
-                                                >
-                                                    <FaStar className="star-icon" /> Applied Earlier
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="dm-title-time-row">
-                                            <span className="cell-name-span">{lead.title} • <strong>{lead.company}</strong></span>
-                                            <span className="dm-time-ago-tag" title={`Discovered / posted ${timeAgo}`}>
+                                            <span className="dm-time-ago-tag" title={`Information origin date: ${timeAgo}`}>
                                                 <FiClock className="time-icon" /> {timeAgo}
                                             </span>
+                                            {matchedApp && (
+                                                <span
+                                                    className="dm-applied-compact-tag"
+                                                    title={`Tracked Role: ${matchedApp.role || "Frontend"} (Applied on ${formateDate(matchedApp.date)})`}
+                                                >
+                                                    <FaStar className="star-icon" /> Applied: {formateDate(matchedApp.date)} • Status: {matchedApp.status}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <button
@@ -299,20 +315,6 @@ export default function DMQueue({ appliedList = [] }) {
                                         <FiTrash2 className="dm-trash-icon" />
                                     </button>
                                 </div>
-
-                                {/* Applied Earlier Context Callout */}
-                                {matchedApp && (
-                                    <div className="dm-applied-history-box">
-                                        <FaStar className="applied-history-star" />
-                                        <span>
-                                            You previously applied for <strong>{matchedApp.role || "Frontend"}</strong> on{" "}
-                                            <strong>{formateDate(matchedApp.date)}</strong> • Status:{" "}
-                                            <span className={`applied-history-status status-${matchedApp.status?.toLowerCase()}`}>
-                                                {matchedApp.status}
-                                            </span>
-                                        </span>
-                                    </div>
-                                )}
 
                                 {/* Discovery Signal */}
                                 {lead.sourceSnippet && (

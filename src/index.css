@@ -1570,21 +1570,46 @@ nav{
   min-width: 0;
 }
 
-.dm-card-name-block h3 {
+.dm-card-name {
   font: var(--h3);
   font-size: 1.05rem;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text);
 }
 
-.dm-title-time-row {
+.dm-card-subtitle {
+  margin: 0.1rem 0 0.35rem 0;
+  font: var(--small);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-tags-single-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+.dm-applied-compact-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  box-shadow: 0 1px 2px rgba(245, 158, 11, 0.15);
 }
 
 .dm-time-ago-tag {
