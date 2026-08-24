@@ -120,7 +120,7 @@ const Dashboard = () => {
             />
 
             {/* 💬 DM Outreach Queue for direct founder & hiring manager outreach */}
-            <DMQueue />
+            <DMQueue appliedList={companiesList} />
 
             {showModal && (
                 <div className="overlay" onClick={() => setShowModel(false)}>

@@ -1458,6 +1458,43 @@ nav{
   border: 1px solid #fde68a;
 }
 
+/* Applied Earlier Star Badge & Filter Pill */
+.pill-applied-star {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+
+.pill-applied-star:hover {
+  background: #fef3c7 !important;
+  border-color: #f59e0b !important;
+}
+
+.pill-applied-star.active {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  border-color: #d97706 !important;
+}
+
+.dm-applied-star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  box-shadow: 0 1px 2px rgba(245, 158, 11, 0.15);
+}
+
+.star-icon {
+  color: #f59e0b;
+  font-size: 0.75rem;
+}
+
 /* Cards Grid */
 .dm-cards-grid {
   display: grid;
@@ -1482,6 +1519,11 @@ nav{
   box-shadow: 0px 6px 12px hsl(220 20% 20% / 0.12);
 }
 
+.dm-card.card-has-applied {
+  border-color: #fcd34d;
+  background: linear-gradient(180deg, #fffdf5 0%, var(--bg-light) 100%);
+}
+
 .dm-card.card-contacted {
   border-left: 4px solid var(--success-text);
 }
@@ -1489,6 +1531,31 @@ nav{
 .dm-card.card-replied {
   border-left: 4px solid #7c3aed;
   background: #faf5ff;
+}
+
+/* Applied History Context Box */
+.dm-applied-history-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  background: #fffbeb;
+  border: 1px dashed #fcd34d;
+  border-radius: 4px;
+  font: var(--small);
+  font-size: 0.76rem;
+  color: #92400e;
+}
+
+.applied-history-star {
+  color: #d97706;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.applied-history-status {
+  font-weight: 700;
+  text-transform: capitalize;
 }
 
 /* Header Row inside Card */

@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { listenToDmLeads, updateDmLeadStatus, deleteDmLead } from "../utils_firebase";
 import CompanyLogo from "./CompanyLogo";
 import { FiSend, FiCopy, FiCheck, FiExternalLink, FiTrash2, FiCheckCircle } from "react-icons/fi";
-import { HiLightningBolt } from "react-icons/hi";
-import { FaUserTie } from "react-icons/fa6";
+import { FaStar } from "react-icons/fa6";
+import { formateDate } from "../constants";
 
 const CATEGORIES = {
     ALL: "all",
+    APPLIED_EARLIER: "applied_earlier",
     HIRING_POST: "hiring_post",
     RECENT_FUNDING: "recent_funding",
     QUEUED_JOB: "queued_job",
@@ -20,7 +21,7 @@ const CATEGORY_META = {
     engineering_lead: { label: "⚡ Engineering Lead", class: "badge-lead" }
 };
 
-export default function DMQueue() {
+export default function DMQueue({ appliedList = [] }) {
     const [leads, setLeads] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES.ALL);
     const [searchQuery, setSearchQuery] = useState("");
@@ -31,9 +32,36 @@ export default function DMQueue() {
         return () => unsubscribe && unsubscribe();
     }, []);
 
+    // Helper: Normalize company name for resilient comparison
+    const normalizeComp = (str = "") => {
+        return str
+            .toLowerCase()
+            .replace(/\s*(?:in india|technologies|solutions|inc|pvt|ltd|interactive|software|tech|llc|gmbh).*$/i, "")
+            .replace(/[^a-z0-9]/g, "")
+            .trim();
+    };
+
+    // Helper: Find if this lead's company was previously applied for
+    const getMatchedApplication = (leadCompany) => {
+        if (!leadCompany || !appliedList.length) return null;
+        const cleanLead = normalizeComp(leadCompany);
+        if (!cleanLead || cleanLead.length < 2) return null;
+
+        return appliedList.find(app => {
+            if (!app.company || app.status === "Dismissed" || app.status === "Queued") return false;
+            const cleanApp = normalizeComp(app.company);
+            if (!cleanApp) return false;
+            return cleanApp === cleanLead || cleanApp.includes(cleanLead) || cleanLead.includes(cleanApp);
+        });
+    };
+
+    // Count of applied earlier leads
+    const appliedEarlierCount = leads.filter(l => Boolean(getMatchedApplication(l.company))).length;
+
     // Category count stats
     const counts = {
         all: leads.length,
+        applied_earlier: appliedEarlierCount,
         hiring_post: leads.filter(l => l.category === "hiring_post").length,
         recent_funding: leads.filter(l => l.category === "recent_funding").length,
         queued_job: leads.filter(l => l.category === "queued_job").length,
@@ -42,9 +70,14 @@ export default function DMQueue() {
 
     // Filter leads
     const filteredLeads = leads.filter(lead => {
-        if (selectedCategory !== CATEGORIES.ALL && lead.category !== selectedCategory) {
+        const matchedApp = getMatchedApplication(lead.company);
+
+        if (selectedCategory === CATEGORIES.APPLIED_EARLIER) {
+            if (!matchedApp) return false;
+        } else if (selectedCategory !== CATEGORIES.ALL && lead.category !== selectedCategory) {
             return false;
         }
+
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             const nameMatch = (lead.name || "").toLowerCase().includes(q);
@@ -116,6 +149,14 @@ export default function DMQueue() {
                     >
                         All ({counts.all})
                     </button>
+                    {counts.applied_earlier > 0 && (
+                        <button
+                            className={`dm-pill pill-applied-star ${selectedCategory === CATEGORIES.APPLIED_EARLIER ? "active" : ""}`}
+                            onClick={() => setSelectedCategory(CATEGORIES.APPLIED_EARLIER)}
+                        >
+                            ⭐ Applied Earlier ({counts.applied_earlier})
+                        </button>
+                    )}
                     {counts.queued_job > 0 && (
                         <button
                             className={`dm-pill pill-queued ${selectedCategory === CATEGORIES.QUEUED_JOB ? "active" : ""}`}
@@ -175,12 +216,16 @@ export default function DMQueue() {
                 <div className="dm-cards-grid">
                     {filteredLeads.map((lead) => {
                         const meta = CATEGORY_META[lead.category] || CATEGORY_META.queued_job;
+                        const matchedApp = getMatchedApplication(lead.company);
                         const isCopied = copiedId === lead.id;
                         const isContacted = lead.status === "Contacted";
                         const isReplied = lead.status === "Replied";
 
                         return (
-                            <div key={lead.id} className={`dm-card card ${isContacted ? "card-contacted" : ""} ${isReplied ? "card-replied" : ""}`}>
+                            <div
+                                key={lead.id}
+                                className={`dm-card card ${matchedApp ? "card-has-applied" : ""} ${isContacted ? "card-contacted" : ""} ${isReplied ? "card-replied" : ""}`}
+                            >
                                 {/* Header */}
                                 <div className="dm-card-header">
                                     <div className="cell-logo-container">
@@ -192,6 +237,14 @@ export default function DMQueue() {
                                             <span className={`portal-badge ${meta.class}`}>
                                                 {meta.label}
                                             </span>
+                                            {matchedApp && (
+                                                <span
+                                                    className="dm-applied-star-badge"
+                                                    title={`You applied to ${matchedApp.company} on ${formateDate(matchedApp.date)} (Current Status: ${matchedApp.status})`}
+                                                >
+                                                    <FaStar className="star-icon" /> Applied Earlier
+                                                </span>
+                                            )}
                                         </div>
                                         <span className="cell-name-span">{lead.title} • <strong>{lead.company}</strong></span>
                                     </div>
@@ -204,6 +257,20 @@ export default function DMQueue() {
                                         <FiTrash2 />
                                     </button>
                                 </div>
+
+                                {/* Applied Earlier Context Callout */}
+                                {matchedApp && (
+                                    <div className="dm-applied-history-box">
+                                        <FaStar className="applied-history-star" />
+                                        <span>
+                                            You previously applied for <strong>{matchedApp.role || "Frontend"}</strong> on{" "}
+                                            <strong>{formateDate(matchedApp.date)}</strong> • Status:{" "}
+                                            <span className={`applied-history-status status-${matchedApp.status?.toLowerCase()}`}>
+                                                {matchedApp.status}
+                                            </span>
+                                        </span>
+                                    </div>
+                                )}
 
                                 {/* Discovery Signal */}
                                 {lead.sourceSnippet && (
@@ -281,4 +348,5 @@ export default function DMQueue() {
         </section>
     );
 }
+
 
