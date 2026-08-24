@@ -41,7 +41,7 @@ function getDiscordDmWebhookUrl() {
     if (m && m[1].trim()) return m[1].trim();
   } catch {}
 
-  return "https://discord.com/api/webhooks/1539211263282909195/7XIyouaKp8OuiFK_nmiKUotYnVf9EypY420N6wtu1_RlSO8fNQ7wEAdg80ZIrbGfOaQw";
+  return null;
 }
 
 const DISCORD_DM_WEBHOOK_URL = getDiscordDmWebhookUrl();
