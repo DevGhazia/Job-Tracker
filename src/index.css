@@ -1780,7 +1780,7 @@ nav{
   padding-top: 0.2rem;
 }
 
-/* Footer Actions */
+/* Footer Actions - 3 Button Row */
 .dm-card-footer {
   display: flex;
   justify-content: space-between;
@@ -1788,30 +1788,57 @@ nav{
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: auto;
-  padding-top: 0.4rem;
+  padding-top: 0.45rem;
   border-top: 1px solid var(--border-muted);
 }
 
-.dm-linkedin-link-btn {
+.dm-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.dm-footer-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   font: var(--small);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: #0077b5;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.55rem;
   border-radius: var(--border-radius);
   text-decoration: none;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.dm-linkedin-link-btn:hover {
+.dm-linkedin-btn {
+  color: #0077b5;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+}
+
+.dm-linkedin-btn:hover {
   background: #0077b5;
   color: #ffffff;
   border-color: #0077b5;
+}
+
+.dm-source-btn {
+  color: var(--text-muted);
+  background: var(--bg);
+  border: var(--default-border);
+}
+
+.dm-source-btn:hover {
+  background: var(--highlight);
+  color: var(--text);
+  border-color: var(--button);
+}
+
+.dm-footer-btn-icon {
+  font-size: 0.82rem;
 }
 
 .dm-status-actions {
@@ -1832,6 +1859,7 @@ nav{
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .pill-status-contacted {

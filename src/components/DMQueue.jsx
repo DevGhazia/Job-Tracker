@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { listenToDmLeads, updateDmLeadStatus, deleteDmLead } from "../utils_firebase";
 import CompanyLogo from "./CompanyLogo";
-import { FiSend, FiCopy, FiCheck, FiExternalLink, FiTrash2, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock } from "react-icons/fi";
+import { FiSend, FiCopy, FiCheck, FiExternalLink, FiTrash2, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock, FiGlobe } from "react-icons/fi";
 import { FaStar } from "react-icons/fa6";
 import { formateDate } from "../constants";
 
@@ -46,6 +46,33 @@ function formatRelativeTime(dateStr) {
     return `${diffMonths}mo ago`;
 }
 
+// Ensure LinkedIn URL always opens the valid profile with https:// protocol
+function getValidLinkedInUrl(lead) {
+    if (!lead || !lead.linkedinUrl) {
+        return `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent((lead?.name || "") + " " + (lead?.company || ""))}`;
+    }
+    const trimmed = lead.linkedinUrl.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed;
+    }
+    return `https://${trimmed.replace(/^\/+/, "")}`;
+}
+
+// Get the original source URL (funding article / hiring post / tracked job posting)
+function getValidSourceUrl(lead, matchedApp) {
+    if (lead?.sourceUrl && lead.sourceUrl.trim().startsWith("http")) {
+        return lead.sourceUrl.trim();
+    }
+    if (matchedApp?.jobUrl && matchedApp.jobUrl.trim().startsWith("http")) {
+        return matchedApp.jobUrl.trim();
+    }
+    if (matchedApp?.url && matchedApp.url.trim().startsWith("http")) {
+        return matchedApp.url.trim();
+    }
+    // Fallback: search source query
+    return `https://www.google.com/search?q=${encodeURIComponent((lead?.company || "") + " frontend engineering careers hiring")}`;
+}
+
 export default function DMQueue({ appliedList = [] }) {
     const [rawLeads, setRawLeads] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES.ALL);
@@ -67,7 +94,7 @@ export default function DMQueue({ appliedList = [] }) {
             .trim();
     };
 
-    // STRICT REQUIREMENT 1: 1 Person per Company
+    // STRICT REQUIREMENT: 1 Person per Company
     const leads = [];
     const seenCompanyKeys = new Set();
     rawLeads.forEach(lead => {
@@ -274,6 +301,9 @@ export default function DMQueue({ appliedList = [] }) {
                             : (lead.sourceDate || lead.createdAt);
                         const timeAgo = formatRelativeTime(originDate);
 
+                        const linkedinUrl = getValidLinkedInUrl(lead);
+                        const sourceUrl = getValidSourceUrl(lead, matchedApp);
+
                         return (
                             <div
                                 key={lead.id}
@@ -372,16 +402,29 @@ export default function DMQueue({ appliedList = [] }) {
                                     )}
                                 </div>
 
-                                {/* Footer Actions */}
+                                {/* Footer Actions - 3 Distinct Action Buttons */}
                                 <div className="dm-card-footer">
-                                    <a
-                                        href={lead.linkedinUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="dm-linkedin-link-btn"
-                                    >
-                                        <FiExternalLink /> Open LinkedIn ↗
-                                    </a>
+                                    <div className="dm-footer-links">
+                                        <a
+                                            href={linkedinUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="dm-footer-btn dm-linkedin-btn"
+                                            title={`Open ${lead.name}'s profile on LinkedIn`}
+                                        >
+                                            <FiExternalLink className="dm-footer-btn-icon" /> LinkedIn Profile ↗
+                                        </a>
+
+                                        <a
+                                            href={sourceUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="dm-footer-btn dm-source-btn"
+                                            title="View original hiring post / funding announcement / job portal"
+                                        >
+                                            <FiGlobe className="dm-footer-btn-icon" /> View Source ↗
+                                        </a>
+                                    </div>
 
                                     <div className="dm-status-actions">
                                         {lead.status === "New" && (
@@ -417,6 +460,7 @@ export default function DMQueue({ appliedList = [] }) {
         </section>
     );
 }
+
 
 
 
