@@ -119,8 +119,8 @@ const Dashboard = () => {
                 onClearAll={handleClearAllQueue}
             />
 
-            {/* 💬 DM Outreach Queue for direct founder & hiring manager outreach */}
-            <DMQueue appliedList={companiesList} />
+            {/* 💬 DM Outreach Queue for funded startups, founder hiring posts & HR contacts */}
+            <DMQueue />
 
             {showModal && (
                 <div className="overlay" onClick={() => setShowModel(false)}>

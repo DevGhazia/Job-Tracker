@@ -2,23 +2,19 @@ import { useState, useEffect } from "react";
 import { listenToDmLeads, updateDmLeadStatus, deleteDmLead } from "../utils_firebase";
 import CompanyLogo from "./CompanyLogo";
 import { FiSend, FiCopy, FiCheck, FiExternalLink, FiTrash2, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock, FiGlobe } from "react-icons/fi";
-import { FaStar } from "react-icons/fa6";
-import { formateDate } from "../constants";
 
 const CATEGORIES = {
     ALL: "all",
-    APPLIED_EARLIER: "applied_earlier",
     HIRING_POST: "hiring_post",
     RECENT_FUNDING: "recent_funding",
-    QUEUED_JOB: "queued_job",
-    ENGINEERING_LEAD: "engineering_lead"
+    HR_LEAD: "hr_lead"
 };
 
 const CATEGORY_META = {
     hiring_post: { label: "🚀 Hiring Post", class: "badge-hiring" },
     recent_funding: { label: "💰 Recent Funding", class: "badge-funding" },
-    queued_job: { label: "📌 Queued Job Contact", class: "badge-queued" },
-    engineering_lead: { label: "⚡ Engineering Lead", class: "badge-lead" }
+    hr_lead: { label: "👥 HR / Recruiter", class: "badge-lead" },
+    engineering_lead: { label: "⚡ Tech Lead", class: "badge-lead" }
 };
 
 // Relative time helper from original source/post/application date
@@ -58,22 +54,18 @@ function getValidLinkedInUrl(lead) {
     return `https://${trimmed.replace(/^\/+/, "")}`;
 }
 
-// Get the original source URL (funding article / hiring post / tracked job posting)
-function getValidSourceUrl(lead, matchedApp) {
+// Get the original source URL (funding article / hiring post)
+function getValidSourceUrl(lead) {
     if (lead?.sourceUrl && lead.sourceUrl.trim().startsWith("http")) {
         return lead.sourceUrl.trim();
     }
-    if (matchedApp?.jobUrl && matchedApp.jobUrl.trim().startsWith("http")) {
-        return matchedApp.jobUrl.trim();
+    if (lead?.linkedinUrl && lead.linkedinUrl.trim().startsWith("http")) {
+        return lead.linkedinUrl.trim();
     }
-    if (matchedApp?.url && matchedApp.url.trim().startsWith("http")) {
-        return matchedApp.url.trim();
-    }
-    // Fallback: search source query
-    return `https://www.google.com/search?q=${encodeURIComponent((lead?.company || "") + " frontend engineering careers hiring")}`;
+    return `https://www.google.com/search?q=${encodeURIComponent((lead?.company || "") + " frontend engineering hiring")}`;
 }
 
-export default function DMQueue({ appliedList = [] }) {
+export default function DMQueue() {
     const [rawLeads, setRawLeads] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES.ALL);
     const [searchQuery, setSearchQuery] = useState("");
@@ -94,30 +86,17 @@ export default function DMQueue({ appliedList = [] }) {
             .trim();
     };
 
-    // STRICT REQUIREMENT: 1 Person per Company
+    // STRICT REQUIREMENT: 1 Person per Company & filter out obsolete queued_job category
     const leads = [];
     const seenCompanyKeys = new Set();
     rawLeads.forEach(lead => {
+        if (lead.category === "queued_job") return; // exclude any leftover queued job contacts
         const compKey = normalizeComp(lead.company || "Other");
         if (!seenCompanyKeys.has(compKey)) {
             seenCompanyKeys.add(compKey);
             leads.push(lead);
         }
     });
-
-    // Helper: Find if this lead's company was previously applied for
-    const getMatchedApplication = (leadCompany) => {
-        if (!leadCompany || !appliedList.length) return null;
-        const cleanLead = normalizeComp(leadCompany);
-        if (!cleanLead || cleanLead.length < 2) return null;
-
-        return appliedList.find(app => {
-            if (!app.company || app.status === "Dismissed" || app.status === "Queued") return false;
-            const cleanApp = normalizeComp(app.company);
-            if (!cleanApp) return false;
-            return cleanApp === cleanLead || cleanApp.includes(cleanLead) || cleanLead.includes(cleanApp);
-        });
-    };
 
     const toggleExpandDm = (id) => {
         setExpandedDmIds(prev => {
@@ -128,26 +107,17 @@ export default function DMQueue({ appliedList = [] }) {
         });
     };
 
-    // Count of applied earlier leads
-    const appliedEarlierCount = leads.filter(l => Boolean(getMatchedApplication(l.company))).length;
-
     // Category count stats
     const counts = {
         all: leads.length,
-        applied_earlier: appliedEarlierCount,
         hiring_post: leads.filter(l => l.category === "hiring_post").length,
         recent_funding: leads.filter(l => l.category === "recent_funding").length,
-        queued_job: leads.filter(l => l.category === "queued_job").length,
-        engineering_lead: leads.filter(l => l.category === "engineering_lead").length
+        hr_lead: leads.filter(l => l.category === "hr_lead").length
     };
 
     // Filter leads
     const filteredLeads = leads.filter(lead => {
-        const matchedApp = getMatchedApplication(lead.company);
-
-        if (selectedCategory === CATEGORIES.APPLIED_EARLIER) {
-            if (!matchedApp) return false;
-        } else if (selectedCategory !== CATEGORIES.ALL && lead.category !== selectedCategory) {
+        if (selectedCategory !== CATEGORIES.ALL && lead.category !== selectedCategory) {
             return false;
         }
 
@@ -205,7 +175,7 @@ export default function DMQueue({ appliedList = [] }) {
                         <h2>DM Outreach Queue</h2>
                     </div>
                     <p className="action-queue-subtitle">
-                        {leads.length} {leads.length === 1 ? "decision maker" : "decision makers"} in India (1 contact per company) ready for 1-click outreach
+                        {leads.length} {leads.length === 1 ? "lead" : "leads"} from funded startups, founder hiring posts & HR recruiters in India
                     </p>
                 </div>
                 <div className="queue-header-actions">
@@ -222,22 +192,6 @@ export default function DMQueue({ appliedList = [] }) {
                     >
                         All ({counts.all})
                     </button>
-                    {counts.applied_earlier > 0 && (
-                        <button
-                            className={`dm-pill pill-applied-star ${selectedCategory === CATEGORIES.APPLIED_EARLIER ? "active" : ""}`}
-                            onClick={() => setSelectedCategory(CATEGORIES.APPLIED_EARLIER)}
-                        >
-                            ⭐ Applied Earlier ({counts.applied_earlier})
-                        </button>
-                    )}
-                    {counts.queued_job > 0 && (
-                        <button
-                            className={`dm-pill pill-queued ${selectedCategory === CATEGORIES.QUEUED_JOB ? "active" : ""}`}
-                            onClick={() => setSelectedCategory(CATEGORIES.QUEUED_JOB)}
-                        >
-                            📌 Queued Job Contacts ({counts.queued_job})
-                        </button>
-                    )}
                     {counts.hiring_post > 0 && (
                         <button
                             className={`dm-pill pill-hiring ${selectedCategory === CATEGORIES.HIRING_POST ? "active" : ""}`}
@@ -254,12 +208,12 @@ export default function DMQueue({ appliedList = [] }) {
                             💰 Recent Funding ({counts.recent_funding})
                         </button>
                     )}
-                    {counts.engineering_lead > 0 && (
+                    {counts.hr_lead > 0 && (
                         <button
-                            className={`dm-pill pill-lead ${selectedCategory === CATEGORIES.ENGINEERING_LEAD ? "active" : ""}`}
-                            onClick={() => setSelectedCategory(CATEGORIES.ENGINEERING_LEAD)}
+                            className={`dm-pill pill-lead ${selectedCategory === CATEGORIES.HR_LEAD ? "active" : ""}`}
+                            onClick={() => setSelectedCategory(CATEGORIES.HR_LEAD)}
                         >
-                            ⚡ Engineering Leads ({counts.engineering_lead})
+                            👥 HR & Recruiters ({counts.hr_lead})
                         </button>
                     )}
                 </div>
@@ -278,8 +232,8 @@ export default function DMQueue({ appliedList = [] }) {
             {/* Cards Content */}
             {leads.length === 0 ? (
                 <div className="dm-empty-state">
-                    <p className="dm-empty-title">🔍 No active DM leads found right now.</p>
-                    <p className="dm-empty-desc">Run <code>node scripts/dm-hunter.mjs</code> or wait for the next scheduled executive scan.</p>
+                    <p className="dm-empty-title">🔍 No startup or hiring leads found right now.</p>
+                    <p className="dm-empty-desc">Run <code>node scripts/dm-hunter.mjs</code> or wait for the next scheduled startup scan.</p>
                 </div>
             ) : filteredLeads.length === 0 ? (
                 <div className="dm-empty-state">
@@ -288,26 +242,20 @@ export default function DMQueue({ appliedList = [] }) {
             ) : (
                 <div className="dm-cards-grid">
                     {filteredLeads.map((lead) => {
-                        const meta = CATEGORY_META[lead.category] || CATEGORY_META.queued_job;
-                        const matchedApp = getMatchedApplication(lead.company);
+                        const meta = CATEGORY_META[lead.category] || CATEGORY_META.hiring_post;
                         const isCopied = copiedId === lead.id;
                         const isContacted = lead.status === "Contacted";
                         const isReplied = lead.status === "Replied";
                         const isExpanded = expandedDmIds.has(lead.id);
                         
-                        // Origin time of the actual post / funding round / application
-                        const originDate = (lead.category === "queued_job" || lead.category === "engineering_lead") && matchedApp
-                            ? (matchedApp.date || lead.sourceDate || lead.createdAt)
-                            : (lead.sourceDate || lead.createdAt);
-                        const timeAgo = formatRelativeTime(originDate);
-
+                        const timeAgo = formatRelativeTime(lead.sourceDate || lead.createdAt);
                         const linkedinUrl = getValidLinkedInUrl(lead);
-                        const sourceUrl = getValidSourceUrl(lead, matchedApp);
+                        const sourceUrl = getValidSourceUrl(lead);
 
                         return (
                             <div
                                 key={lead.id}
-                                className={`dm-card card ${matchedApp ? "card-has-applied" : ""} ${isContacted ? "card-contacted" : ""} ${isReplied ? "card-replied" : ""}`}
+                                className={`dm-card card ${isContacted ? "card-contacted" : ""} ${isReplied ? "card-replied" : ""}`}
                             >
                                 {/* Header */}
                                 <div className="dm-card-header">
@@ -318,22 +266,14 @@ export default function DMQueue({ appliedList = [] }) {
                                         <h3 className="dm-card-name">{lead.name}</h3>
                                         <p className="dm-card-subtitle">{lead.title} • <strong>{lead.company}</strong></p>
                                         
-                                        {/* All tags aligned in a single neat row */}
+                                        {/* Tags aligned in a single neat row */}
                                         <div className="dm-tags-single-row">
                                             <span className={`portal-badge ${meta.class}`}>
                                                 {meta.label}
                                             </span>
-                                            <span className="dm-time-ago-tag" title={`Information origin date: ${timeAgo}`}>
+                                            <span className="dm-time-ago-tag" title={`Source publication date: ${timeAgo}`}>
                                                 <FiClock className="time-icon" /> {timeAgo}
                                             </span>
-                                            {matchedApp && (
-                                                <span
-                                                    className="dm-applied-compact-tag"
-                                                    title={`Tracked Role: ${matchedApp.role || "Frontend"} (Applied on ${formateDate(matchedApp.date)})`}
-                                                >
-                                                    <FaStar className="star-icon" /> Applied: {formateDate(matchedApp.date)} • Status: {matchedApp.status}
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                     <button
@@ -420,7 +360,7 @@ export default function DMQueue({ appliedList = [] }) {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="dm-footer-btn dm-source-btn"
-                                            title="View original hiring post / funding announcement / job portal"
+                                            title="View original hiring post or funding announcement"
                                         >
                                             <FiGlobe className="dm-footer-btn-icon" /> View Source ↗
                                         </a>
@@ -460,6 +400,7 @@ export default function DMQueue({ appliedList = [] }) {
         </section>
     );
 }
+
 
 
 
