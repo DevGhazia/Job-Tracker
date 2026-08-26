@@ -25,6 +25,8 @@ if (!getApps().length) {
 const db = getFirestore();
 const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
 function getDiscordDmWebhookUrl() {
   if (process.env.DISCORD_DM_WEBHOOK_URL) return process.env.DISCORD_DM_WEBHOOK_URL;
   try {
@@ -58,6 +60,21 @@ function getFirecrawlApiKey() {
 
 const firecrawlKey = getFirecrawlApiKey();
 const firecrawl = firecrawlKey ? new FirecrawlApp({ apiKey: firecrawlKey }) : null;
+
+// Exact LinkedIn Snowflake Post Timestamp Decoder
+export function getLinkedinPostTimestamp(url = "") {
+  const m = url.match(/activity-([0-9]{18,20})/);
+  if (!m) return null;
+  try {
+    const id = BigInt(m[1]);
+    const timestampMs = Number(id >> 22n);
+    const date = new Date(timestampMs);
+    if (isNaN(date.getTime()) || date.getFullYear() < 2020) return null;
+    return date;
+  } catch {
+    return null;
+  }
+}
 
 // 2. Tailored DM Generator for Startups, Hiring Posts & HR/Recruiters
 export function generateTailoredDm(category, personName, companyName, extraContext = "") {
@@ -163,7 +180,7 @@ export async function lookupStartupLeader(companyName) {
   }
 }
 
-// 4. Hunt Recent Startup Funding (<= 7 days old)
+// 4. Hunt Recent Startup Funding (Strictly <= 3 days old)
 export async function huntRecentFundingLeads() {
   const fundingLeads = [];
   const feeds = [
@@ -172,7 +189,6 @@ export async function huntRecentFundingLeads() {
   ];
 
   const now = new Date();
-  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
   for (const feedUrl of feeds) {
     try {
@@ -193,8 +209,8 @@ export async function huntRecentFundingLeads() {
         const pubDateStr = dateMatch ? dateMatch[1].trim() : "";
         const pubDate = pubDateStr ? new Date(pubDateStr) : new Date();
 
-        // 7-day recency filter
-        if (now.getTime() - pubDate.getTime() > SEVEN_DAYS_MS) {
+        // Strict 3-day recency filter
+        if (now.getTime() - pubDate.getTime() > THREE_DAYS_MS) {
           continue;
         }
 
@@ -218,26 +234,45 @@ export async function huntRecentFundingLeads() {
   return fundingLeads;
 }
 
-// 5. Hunt Direct Founder & HR Hiring Posts on LinkedIn India (<= 7 days old)
+// 5. Hunt Direct Founder & HR Hiring Posts on LinkedIn India (Strictly <= 3 days old)
 export async function huntPublicHiringPosts() {
   if (!firecrawl) return [];
+  const now = new Date();
+
   const queries = [
-    `site:in.linkedin.com/posts ("hiring" OR "looking for") ("frontend" OR "react") ("DM me" OR "reach out" OR "send resume" OR "email")`,
-    `site:in.linkedin.com/posts ("we are hiring" OR "I am hiring") ("frontend" OR "react developer") ("founder" OR "HR" OR "recruiter")`
+    `site:in.linkedin.com/posts ("hiring" OR "looking for") ("frontend" OR "react") ("1d" OR "2d" OR "3d" OR "hours ago" OR "yesterday") ("DM me" OR "email" OR "send resume")`,
+    `site:in.linkedin.com/posts ("we are hiring" OR "I am hiring") ("frontend" OR "react developer") ("founder" OR "HR" OR "recruiter") ("1d" OR "2d" OR "3d" OR "hours ago")`
   ];
   
   const postLeads = [];
 
   for (const query of queries) {
     try {
-      const res = await firecrawl.search(query, { limit: 4 });
+      const res = await firecrawl.search(query, { limit: 6 });
       const items = res.web || [];
 
       for (const item of items) {
+        if (!item.url || !item.url.includes("linkedin.com/posts/")) continue;
+
+        // 1. Verify exact post creation timestamp via LinkedIn Snowflake ID
+        const postTimestamp = getLinkedinPostTimestamp(item.url);
+        if (!postTimestamp) continue;
+
+        const ageMs = now.getTime() - postTimestamp.getTime();
+        // Discard if older than 3 days or in future
+        if (ageMs > THREE_DAYS_MS || ageMs < 0) {
+          continue;
+        }
+
         const cleanTitle = (item.title || "").replace(/\s*\|\s*LinkedIn.*$/i, "").trim();
         const parts = cleanTitle.split(/[-–—|]/).map(p => p.trim());
         const name = parts[0] || "Hiring Lead";
         const snippet = item.description || cleanTitle;
+
+        // Discard closed/complete hiring posts
+        if (/hiring is (complete|closed|over)|position (is )?filled|no longer accepting|sorry we can't reach/i.test(snippet)) {
+          continue;
+        }
 
         if (!isIndiaBased(item.url, snippet, cleanTitle)) continue;
 
@@ -264,7 +299,7 @@ export async function huntPublicHiringPosts() {
           category: category,
           sourceSnippet: snippet.slice(0, 220),
           sourceUrl: item.url,
-          sourceDate: new Date().toISOString()
+          sourceDate: postTimestamp.toISOString()
         });
       }
     } catch {}
@@ -278,9 +313,9 @@ export async function sendDmDiscordNotification(lead) {
   if (!DISCORD_DM_WEBHOOK_URL) return;
 
   const categoryLabels = {
-    hiring_post: "🟣 🚀 Founder Hiring Post",
-    recent_funding: "🟢 💰 Startup Funding Round",
-    hr_lead: "👥 📢 HR / Recruiter Post",
+    hiring_post: "🟣 🚀 Founder Hiring Post (< 3d old)",
+    recent_funding: "🟢 💰 Startup Funding Round (< 3d old)",
+    hr_lead: "👥 📢 HR / Recruiter Post (< 3d old)",
     engineering_lead: "🟠 ⚡ Tech Lead"
   };
 
@@ -334,22 +369,43 @@ export async function sendDmDiscordNotification(lead) {
   }
 }
 
-// 7. Main Runner (Strictly Small Startups with Recent Funding & Founder/HR Hiring Posts)
+// 7. Main Runner (Strictly Small Startups & Posts <= 3 Days Old)
 export async function runDmHunter() {
-  console.log("🔍 Scanning for Funded Startups, Founder Hiring Posts & HR Contacts in India (<= 7 days old)...\n");
+  console.log("🔍 Scanning for Funded Startups, Founder Hiring Posts & HR Contacts in India (strictly <= 3 days old)...\n");
 
   const leadsRef = db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads");
   const existingSnapshot = await leadsRef.get();
   
-  // Prune queued_job leads and duplicate company leads
+  const now = new Date();
   const companyMap = new Map();
   const docsToDelete = [];
 
   existingSnapshot.docs.forEach(doc => {
     const data = doc.data();
     
-    // Remove obsolete queued_job / applied leads
+    // 1. Remove obsolete queued_job category
     if (data.category === "queued_job") {
+      docsToDelete.push(doc.id);
+      return;
+    }
+
+    // 2. Remove leads whose sourceDate is older than 3 days or missing
+    if (data.sourceDate) {
+      const srcDate = new Date(data.sourceDate);
+      if (!isNaN(srcDate.getTime()) && (now.getTime() - srcDate.getTime() > THREE_DAYS_MS)) {
+        docsToDelete.push(doc.id);
+        return;
+      }
+    } else if (data.createdAt) {
+      const createDate = new Date(data.createdAt);
+      if (!isNaN(createDate.getTime()) && (now.getTime() - createDate.getTime() > THREE_DAYS_MS)) {
+        docsToDelete.push(doc.id);
+        return;
+      }
+    }
+
+    // 3. Remove known closed/old posts
+    if (data.name === "Shrey Batra" || (data.sourceSnippet && /hiring is (complete|closed)/i.test(data.sourceSnippet))) {
       docsToDelete.push(doc.id);
       return;
     }
@@ -368,7 +424,7 @@ export async function runDmHunter() {
   });
 
   if (docsToDelete.length > 0) {
-    console.log(`🧹 Pruning ${docsToDelete.length} obsolete queued-job / duplicate contacts...`);
+    console.log(`🧹 Pruning ${docsToDelete.length} obsolete, >3 days old, or closed leads...`);
     for (const docId of docsToDelete) {
       await leadsRef.doc(docId).delete();
     }
@@ -377,8 +433,8 @@ export async function runDmHunter() {
   const existingCompanies = new Set(companyMap.keys());
   let newLeadsCount = 0;
 
-  // STEP 1: Hunt for Recently Funded Indian Startups (<= 7 days old)
-  console.log("💰 Step 1: Checking Recent Startup Funding Rounds in India (<= 7 days old)...");
+  // STEP 1: Hunt for Recently Funded Indian Startups (strictly <= 3 days old)
+  console.log("💰 Step 1: Checking Recent Startup Funding Rounds in India (<= 3 days old)...");
   const fundingItems = await huntRecentFundingLeads();
   for (const fund of fundingItems.slice(0, 6)) {
     const compKey = fund.company.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -414,8 +470,8 @@ export async function runDmHunter() {
     }
   }
 
-  // STEP 2: Hunt for Direct Founder & HR Hiring Posts on LinkedIn India (<= 7 days old)
-  console.log("\n🚀 Step 2: Checking Direct Founder & HR Hiring Posts in India (<= 7 days old)...");
+  // STEP 2: Hunt for Direct Founder & HR Hiring Posts on LinkedIn India (strictly <= 3 days old)
+  console.log("\n🚀 Step 2: Checking Direct Founder & HR Hiring Posts in India (<= 3 days old)...");
   const postLeads = await huntPublicHiringPosts();
   for (const lead of postLeads) {
     const compKey = lead.company.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -446,7 +502,7 @@ export async function runDmHunter() {
     await sendDmDiscordNotification(leadData);
   }
 
-  console.log(`\n🎉 DM Hunter completed! Added ${newLeadsCount} new startup & hiring leads.`);
+  console.log(`\n🎉 DM Hunter completed! Added ${newLeadsCount} new startup & hiring leads (strictly <= 3 days old).`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
