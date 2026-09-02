@@ -25,7 +25,8 @@ if (!getApps().length) {
 const db = getFirestore();
 const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
-const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+// Freshness limit for DISCOVERING new leads (up to 7 days)
+const MAX_DISCOVERY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getDiscordDmWebhookUrl() {
   if (process.env.DISCORD_DM_WEBHOOK_URL) return process.env.DISCORD_DM_WEBHOOK_URL;
@@ -180,11 +181,12 @@ export async function lookupStartupLeader(companyName) {
   }
 }
 
-// 4. Hunt Recent Startup Funding (Strictly <= 3 days old)
+// 4. Hunt Recent Startup Funding (Discover articles <= 7 days old)
 export async function huntRecentFundingLeads() {
   const fundingLeads = [];
   const feeds = [
     "https://inc42.com/feed/",
+    "https://entrackr.com/feed/",
     "https://techcrunch.com/category/startups/feed/"
   ];
 
@@ -197,7 +199,7 @@ export async function huntRecentFundingLeads() {
       const xml = await res.text();
 
       const items = xml.match(/<item>[\s\S]*?<\/item>/gi) || [];
-      for (const item of items.slice(0, 20)) {
+      for (const item of items.slice(0, 25)) {
         const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/i) || item.match(/<title>([\s\S]*?)<\/title>/i);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/i);
         const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/i) || item.match(/<description>([\s\S]*?)<\/description>/i);
@@ -209,8 +211,8 @@ export async function huntRecentFundingLeads() {
         const pubDateStr = dateMatch ? dateMatch[1].trim() : "";
         const pubDate = pubDateStr ? new Date(pubDateStr) : new Date();
 
-        // Strict 3-day recency filter
-        if (now.getTime() - pubDate.getTime() > THREE_DAYS_MS) {
+        // Freshness discovery filter: only consider recent funding announcements
+        if (now.getTime() - pubDate.getTime() > MAX_DISCOVERY_AGE_MS) {
           continue;
         }
 
@@ -234,14 +236,14 @@ export async function huntRecentFundingLeads() {
   return fundingLeads;
 }
 
-// 5. Hunt Direct Founder & HR Hiring Posts on LinkedIn India (Strictly <= 3 days old)
+// 5. Hunt Direct Founder & HR Hiring Posts on LinkedIn India (Discover posts <= 7 days old)
 export async function huntPublicHiringPosts() {
   if (!firecrawl) return [];
   const now = new Date();
 
   const queries = [
-    `site:in.linkedin.com/posts ("hiring" OR "looking for") ("frontend" OR "react") ("1d" OR "2d" OR "3d" OR "hours ago" OR "yesterday") ("DM me" OR "email" OR "send resume")`,
-    `site:in.linkedin.com/posts ("we are hiring" OR "I am hiring") ("frontend" OR "react developer") ("founder" OR "HR" OR "recruiter") ("1d" OR "2d" OR "3d" OR "hours ago")`
+    `site:in.linkedin.com/posts ("hiring" OR "looking for") ("frontend" OR "react") ("DM me" OR "email" OR "send resume" OR "reach out")`,
+    `site:in.linkedin.com/posts ("we are hiring" OR "I am hiring" OR "urgent requirement") ("frontend" OR "react developer") ("founder" OR "HR" OR "recruiter")`
   ];
   
   const postLeads = [];
@@ -259,8 +261,8 @@ export async function huntPublicHiringPosts() {
         if (!postTimestamp) continue;
 
         const ageMs = now.getTime() - postTimestamp.getTime();
-        // Discard if older than 3 days or in future
-        if (ageMs > THREE_DAYS_MS || ageMs < 0) {
+        // Discard if older than discovery limit or in future
+        if (ageMs > MAX_DISCOVERY_AGE_MS || ageMs < 0) {
           continue;
         }
 
@@ -313,9 +315,9 @@ export async function sendDmDiscordNotification(lead) {
   if (!DISCORD_DM_WEBHOOK_URL) return;
 
   const categoryLabels = {
-    hiring_post: "🟣 🚀 Founder Hiring Post (< 3d old)",
-    recent_funding: "🟢 💰 Startup Funding Round (< 3d old)",
-    hr_lead: "👥 📢 HR / Recruiter Post (< 3d old)",
+    hiring_post: "🟣 🚀 Founder Hiring Post",
+    recent_funding: "🟢 💰 Startup Funding Round",
+    hr_lead: "👥 📢 HR / Recruiter Post",
     engineering_lead: "🟠 ⚡ Tech Lead"
   };
 
@@ -369,74 +371,33 @@ export async function sendDmDiscordNotification(lead) {
   }
 }
 
-// 7. Main Runner (Strictly Small Startups & Posts <= 3 Days Old)
+// 7. Main Runner (Persistent Queue: NO AUTO-DELETION of existing leads)
 export async function runDmHunter() {
-  console.log("🔍 Scanning for Funded Startups, Founder Hiring Posts & HR Contacts in India (strictly <= 3 days old)...\n");
+  console.log("🔍 Scanning for Funded Startups, Founder Hiring Posts & HR Contacts in India...\n");
 
   const leadsRef = db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads");
   const existingSnapshot = await leadsRef.get();
   
-  const now = new Date();
-  const companyMap = new Map();
-  const docsToDelete = [];
+  // Track existing companies so we don't add duplicate companies.
+  // CRITICAL: NEVER AUTO-DELETE EXISTING LEADS. They stay until the user clears them!
+  const existingCompanies = new Set();
 
   existingSnapshot.docs.forEach(doc => {
     const data = doc.data();
-    
-    // 1. Remove obsolete queued_job category
-    if (data.category === "queued_job") {
-      docsToDelete.push(doc.id);
-      return;
-    }
-
-    // 2. Remove leads whose sourceDate is older than 3 days or missing
-    if (data.sourceDate) {
-      const srcDate = new Date(data.sourceDate);
-      if (!isNaN(srcDate.getTime()) && (now.getTime() - srcDate.getTime() > THREE_DAYS_MS)) {
-        docsToDelete.push(doc.id);
-        return;
-      }
-    } else if (data.createdAt) {
-      const createDate = new Date(data.createdAt);
-      if (!isNaN(createDate.getTime()) && (now.getTime() - createDate.getTime() > THREE_DAYS_MS)) {
-        docsToDelete.push(doc.id);
-        return;
-      }
-    }
-
-    // 3. Remove known closed/old posts
-    if (data.name === "Shrey Batra" || (data.sourceSnippet && /hiring is (complete|closed)/i.test(data.sourceSnippet))) {
-      docsToDelete.push(doc.id);
-      return;
-    }
-
     const compKey = (data.company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (!compKey) {
-      docsToDelete.push(doc.id);
-      return;
-    }
-
-    if (companyMap.has(compKey)) {
-      docsToDelete.push(doc.id); // keep only 1 per company
-    } else {
-      companyMap.set(compKey, doc.id);
+    if (compKey) {
+      existingCompanies.add(compKey);
     }
   });
 
-  if (docsToDelete.length > 0) {
-    console.log(`🧹 Pruning ${docsToDelete.length} obsolete, >3 days old, or closed leads...`);
-    for (const docId of docsToDelete) {
-      await leadsRef.doc(docId).delete();
-    }
-  }
+  console.log(`📋 Currently ${existingSnapshot.size} active persistent leads in DM Queue.`);
 
-  const existingCompanies = new Set(companyMap.keys());
   let newLeadsCount = 0;
 
-  // STEP 1: Hunt for Recently Funded Indian Startups (strictly <= 3 days old)
-  console.log("💰 Step 1: Checking Recent Startup Funding Rounds in India (<= 3 days old)...");
+  // STEP 1: Hunt for Recently Funded Indian Startups
+  console.log("💰 Step 1: Checking Recent Startup Funding Rounds in India...");
   const fundingItems = await huntRecentFundingLeads();
-  for (const fund of fundingItems.slice(0, 6)) {
+  for (const fund of fundingItems.slice(0, 8)) {
     const compKey = fund.company.toLowerCase().replace(/[^a-z0-9]/g, "");
     if (existingCompanies.has(compKey)) continue;
 
@@ -470,8 +431,8 @@ export async function runDmHunter() {
     }
   }
 
-  // STEP 2: Hunt for Direct Founder & HR Hiring Posts on LinkedIn India (strictly <= 3 days old)
-  console.log("\n🚀 Step 2: Checking Direct Founder & HR Hiring Posts in India (<= 3 days old)...");
+  // STEP 2: Hunt for Direct Founder & HR Hiring Posts on LinkedIn India
+  console.log("\n🚀 Step 2: Checking Direct Founder & HR Hiring Posts in India...");
   const postLeads = await huntPublicHiringPosts();
   for (const lead of postLeads) {
     const compKey = lead.company.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -502,7 +463,7 @@ export async function runDmHunter() {
     await sendDmDiscordNotification(leadData);
   }
 
-  console.log(`\n🎉 DM Hunter completed! Added ${newLeadsCount} new startup & hiring leads (strictly <= 3 days old).`);
+  console.log(`\n🎉 DM Hunter completed! Added ${newLeadsCount} new persistent leads to queue.`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
