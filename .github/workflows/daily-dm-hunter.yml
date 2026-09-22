@@ -1,0 +1,30 @@
+name: Daily Founder & HR Outreach Discovery
+
+on:
+  schedule:
+    # Runs 1 time daily at 8:47 AM IST (03:17 UTC)
+    - cron: '17 3 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  dm-discovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Founder & HR Hunter
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          DISCORD_DM_WEBHOOK_URL: ${{ secrets.DISCORD_DM_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node scripts/dm-hunter.mjs
