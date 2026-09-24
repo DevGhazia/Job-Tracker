@@ -78,3 +78,22 @@ export function formatLocation(loc){
     return primary || "Remote";
 }
 
+export function formatExperienceTag(exp) {
+    if (exp === null || exp === undefined || exp === "") return "0-2 yrs";
+    const str = String(exp).toLowerCase().replace(/[^0-9\-+]/g, "").trim();
+    if (/^[0-9]+$/.test(str)) {
+        const num = parseInt(str, 10);
+        return num === 0 ? "0-2 yrs" : `${num} yrs`;
+    }
+    if (/^[0-9]+-[0-9]+$/.test(str)) {
+        return `${str} yrs`;
+    }
+    if (/^[0-9]+\+$/.test(str)) {
+        return `${str} yrs`;
+    }
+    const m = String(exp).match(/([0-9]+)\s*(?:-|to|\+)?\s*([0-9]*)/);
+    if (m) {
+        return m[2] ? `${m[1]}-${m[2]} yrs` : (m[1] === "0" ? "0-2 yrs" : `${m[1]} yrs`);
+    }
+    return "0-2 yrs";
+}

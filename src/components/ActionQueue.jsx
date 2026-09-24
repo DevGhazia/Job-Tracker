@@ -2,7 +2,7 @@ import { HiLocationMarker, HiCalendar, HiLightningBolt } from "react-icons/hi";
 import { FaBusinessTime } from "react-icons/fa6";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiSolidMessageSquareCheck } from "react-icons/bi";
-import { ACTIONS, formateDate, formatLocation } from "../constants";
+import { ACTIONS, formateDate, formatLocation, formatExperienceTag } from "../constants";
 import CompanyLogo from "./CompanyLogo";
 
 const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) => {
@@ -24,20 +24,6 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) =>
         if (url) {
             window.open(url, "_blank", "noopener,noreferrer");
         }
-    }
-
-    function formatExperienceTag(exp) {
-        if (exp === null || exp === undefined || exp === "") return "0-2 yrs";
-        if (typeof exp === "string") {
-            const clean = exp.replace(/\s+/g, " ").trim();
-            const m = clean.match(/([0-9]+)\s*(?:-|to|\+)?\s*([0-9]*)/);
-            if (m) {
-                return m[2] ? `${m[1]}-${m[2]} yrs` : `${m[1]} yrs`;
-            }
-            return clean;
-        }
-        if (exp === 0) return "0-2 yrs";
-        return `${exp} yrs`;
     }
 
     return (

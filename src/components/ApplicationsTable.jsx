@@ -12,7 +12,7 @@ import {
     BiSolidMessageSquareX,
 } from "react-icons/bi";
 import { FaBusinessTime } from "react-icons/fa6";
-import { ACTIONS, formateDate, formatLocation, getDaysPassed, STATUSES, TIMEOUT_PERIOD } from "../constants";
+import { ACTIONS, formateDate, formatLocation, formatExperienceTag, getDaysPassed, STATUSES, TIMEOUT_PERIOD } from "../constants";
 import CompanyLogo from "./CompanyLogo";
 
 const ITEMS_PER_PAGE = 10;
@@ -56,17 +56,7 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
     }
 
     function getRequiredExperience(exp) {
-        if (exp === null || exp === undefined || exp === "") return "0-2 yrs";
-        if (typeof exp === "string") {
-            const clean = exp.replace(/\s+/g, " ").trim();
-            const m = clean.match(/([0-9]+)\s*(?:-|to|\+)?\s*([0-9]*)/);
-            if (m) {
-                return m[2] ? `${m[1]}-${m[2]} yrs` : `${m[1]} yrs`;
-            }
-            return clean;
-        }
-        if (exp === 0) return "0-2 yrs";
-        return `${exp} yrs`;
+        return formatExperienceTag(exp);
     }
 
     function getStatusIcon(status) {
