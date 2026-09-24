@@ -524,43 +524,61 @@ export async function fetchLeverJobs(companyObj) {
   }
 }
 
-export function extractCompanyAndRole(title, url, portalName = "") {
-  let role = title;
+export function extractCompanyAndRole(title = "", url = "", portalName = "") {
+  let clean = title.trim();
+
+  // Strip portal branding from end of title
+  clean = clean.replace(/\s*\|\s*Y Combinator.*$/i, "")
+               .replace(/\s*•\s*Wellfound.*$/i, "")
+               .replace(/\s*-\s*Wellfound.*$/i, "")
+               .replace(/\s*-\s*Instahyre.*$/i, "")
+               .replace(/\s*\|\s*Cutshort.*$/i, "")
+               .replace(/\s*-\s*Cutshort.*$/i, "")
+               .replace(/\s*-\s*Naukri\.com.*$/i, "")
+               .replace(/\s*\|\s*LinkedIn.*$/i, "")
+               .trim();
+
   let company = "";
+  let role = clean;
 
-  // 1. Try URL parsing for standard ATS platforms (e.g. boards.greenhouse.io/<company>/jobs)
-  try {
-    const parsedUrl = new URL(url);
-    const host = parsedUrl.hostname.toLowerCase();
-    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
-
-    if (host.includes("greenhouse.io") || host.includes("lever.co")) {
-      if (pathParts.length > 0 && pathParts[0] !== "jobs" && pathParts[0] !== "job") {
-        company = pathParts[0].replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-      } else if (pathParts.length > 1) {
-        company = pathParts[1].replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-      }
+  // 1. "X is hiring Y" (Cutshort, LinkedIn)
+  const isHiring = clean.match(/^(.+?)\s+is hiring\s+(.+)$/i);
+  if (isHiring) {
+    company = isHiring[1].trim();
+    role = isHiring[2].trim();
+  }
+  // 2. "Role job at Company" (Instahyre)
+  else if (/\s+job at\s+/i.test(clean)) {
+    const parts = clean.split(/\s+job at\s+/i);
+    role = parts[0].trim();
+    company = parts[1].split(/[-–—•|]/)[0].trim();
+  }
+  // 3. "Role at Company" (YC, Wellfound, LinkedIn)
+  else if (/\sat\s/i.test(clean)) {
+    const parts = clean.split(/\sat\s/i);
+    role = parts[0].trim();
+    company = parts[1].split(/[-–—•|]/)[0].trim();
+  }
+  // 4. "Role - Company - Location - Exp" (Naukri)
+  else if (clean.includes(" - ")) {
+    const parts = clean.split(" - ").map(p => p.trim());
+    role = parts[0];
+    if (parts.length > 1 && !/^[0-9]/.test(parts[1])) {
+      company = parts[1];
     }
-  } catch {}
-
-  // 2. Parse title patterns like "Role at Company", "Role - Company", "Role | Company"
-  if (title.includes(" at ")) {
-    const parts = title.split(" at ");
-    role = parts[0].trim();
-    if (!company) company = parts[1].split(/[(\[\-|]/)[0].trim();
-  } else if (title.includes(" - ")) {
-    const parts = title.split(" - ");
-    role = parts[0].trim();
-    if (!company) company = parts[1].split(/[(\[\-|]/)[0].trim();
-  } else if (title.includes(" | ")) {
-    const parts = title.split(" | ");
-    role = parts[0].trim();
-    if (!company) company = parts[1].split(/[(\[\-|]/)[0].trim();
   }
 
-  // Clean trailing board labels from role
-  role = role.replace(/\s*[-|]\s*(?:Greenhouse|Lever|Naukri|Wellfound|Instahyre|Cutshort).*$/i, "").trim();
-  if (!company) company = portalName.replace(/\s*(?:Direct|Jobs)/i, "") || "Tech Company";
+  // Clean company name (with word boundaries to avoid breaking names like InCred)
+  company = company.replace(/\s*\([^)]*\)/g, "")
+                   .replace(/\b(?:pvt\.?|ltd\.?|private limited|inc\.?|llc)\b.*$/i, "")
+                   .trim();
+
+  // Clean role
+  role = role.replace(/\s*(?:job|opening|hiring|remote only).*$/i, "").trim();
+
+  if (!company) {
+    company = portalName || "Tech Company";
+  }
 
   return { company, role };
 }
@@ -569,13 +587,13 @@ export async function fetchMultiPortalJobs() {
   if (!firecrawlClient) return [];
   // Curated portals: Greenhouse, Lever, YC, Wellfound, Instahyre, Cutshort, Naukri
   const portalSearches = [
-    { portalName: "Greenhouse Direct", query: "site:boards.greenhouse.io (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\" OR \"Software Engineer Frontend\") (\"India\" OR \"Remote\")" },
-    { portalName: "Lever Direct", query: "site:jobs.lever.co (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
-    { portalName: "Y Combinator", query: "site:workatastartup.com/jobs (\"Frontend\" OR \"React\")" },
-    { portalName: "Wellfound", query: "site:wellfound.com/jobs (\"Frontend Developer\" OR \"React Developer\")" },
-    { portalName: "Instahyre", query: "site:instahyre.com/job (\"Frontend Developer\" OR \"React Developer\")" },
-    { portalName: "Cutshort", query: "site:cutshort.io/job (\"Frontend Developer\" OR \"React Developer\")" },
-    { portalName: "Naukri", query: "site:naukri.com/job-listings (\"Frontend Developer\" OR \"React Developer\")" }
+    { portalName: "Y Combinator", query: "site:workatastartup.com/jobs (\"Frontend\" OR \"React\") (\"India\" OR \"Remote\")" },
+    { portalName: "Wellfound", query: "site:wellfound.com/jobs (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
+    { portalName: "Instahyre", query: "site:instahyre.com/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\" OR \"Bangalore\")" },
+    { portalName: "Cutshort", query: "site:cutshort.io/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\")" },
+    { portalName: "Naukri", query: "site:naukri.com/job-listings (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"0 to 2 years\" OR \"1 to 3 years\" OR \"2 to 4 years\" OR \"React\")" },
+    { portalName: "Greenhouse Direct", query: "site:boards.greenhouse.io (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
+    { portalName: "Lever Direct", query: "site:jobs.lever.co (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" }
   ];
 
   const results = [];
@@ -583,7 +601,7 @@ export async function fetchMultiPortalJobs() {
 
   for (const { portalName, query } of portalSearches) {
     try {
-      const res = await firecrawlClient.search(query, { limit: 6 });
+      const res = await firecrawlClient.search(query, { limit: 8 });
       const items = res?.web || res?.data || [];
 
       for (const item of items) {
@@ -599,15 +617,6 @@ export async function fetchMultiPortalJobs() {
         if (isStrictlyBackendOnly(desc)) continue;
 
         const expCheck = extractExperience(desc);
-        if (!expCheck.valid) continue;
-
-        // Live Page Verification
-        const liveCheck = await verifyLiveJobPage(url, portalName);
-        if (!liveCheck.valid) {
-          console.log(`⏩ Skipping dead/outdated job (${liveCheck.reason}): ${role} at ${company}`);
-          continue;
-        }
-
         const clearoutLogo = await fetchClearoutLogo(company);
 
         seen.add(url);
