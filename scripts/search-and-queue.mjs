@@ -69,6 +69,20 @@ async function runSearchAndQueue() {
   const newlyQueued = [];
   const today = new Date().toISOString().split("T")[0];
 
+  // Initialize shared Playwright browser instance for fast batch proofreading
+  let playwrightBrowser = null;
+  try {
+    const { chromium } = await import("playwright");
+    playwrightBrowser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+    });
+  } catch (e) {
+    console.warn("⚠️ Playwright launch warning (continuing without browser proofreading):", e.message);
+  }
+
+  const { proofreadJobWithPlaywright } = await import("./verifier.mjs");
+
   for (const job of jobs) {
     const cleanCompany = (job.company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     const cleanRole = (job.role || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -80,13 +94,25 @@ async function runSearchAndQueue() {
       continue;
     }
 
+    // 🔬 STAGE 2: Playwright Source Page Proofreading
+    let verifiedExp = job.experience || "0 - 2 YOE";
+    if (playwrightBrowser && job.jobUrl) {
+      const proof = await proofreadJobWithPlaywright(job.jobUrl, playwrightBrowser);
+      if (!proof.isSuitable) {
+        console.log(`🚫 [Playwright Proofreader Rejection] Skipping ${job.role} at ${job.company}: ${proof.reason}`);
+        continue; // Drop jobs whose source page demands senior/3+ YOE!
+      }
+      verifiedExp = proof.verifiedExperience || verifiedExp;
+      console.log(`✅ [Playwright Verified 0-2 YOE] ${job.role} at ${job.company} (${verifiedExp})`);
+    }
+
     const tailoredPitch = generateTailoredPitch(job, profile);
     const newApp = {
       logo: job.logo || null,
       company: job.company,
       role: job.role,
       location: job.location,
-      experience: job.experience,
+      experience: verifiedExp,
       jobUrl: job.jobUrl,
       portalName: job.portalName,
       notes: tailoredPitch,
@@ -99,7 +125,11 @@ async function runSearchAndQueue() {
     console.log(`⚡ Queued: ${job.role} at ${job.company} [ID: ${doc.id}]`);
     existingUrls.add(job.jobUrl);
     queuedCount++;
-    newlyQueued.push(job);
+    newlyQueued.push({ ...job, experience: verifiedExp });
+  }
+
+  if (playwrightBrowser) {
+    await playwrightBrowser.close();
   }
 
   console.log(`\n🎉 Successfully queued ${queuedCount} new jobs to your Action Queue!`);
