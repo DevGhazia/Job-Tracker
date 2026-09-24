@@ -56,8 +56,17 @@ const ApplicationsTable = ({ list, updateList, handleDelete }) => {
     }
 
     function getRequiredExperience(exp) {
-        if (exp === 0) return "Entry-level";
-        return `${exp}+ years`;
+        if (exp === null || exp === undefined || exp === "") return "0-2 yrs";
+        if (typeof exp === "string") {
+            const clean = exp.replace(/\s+/g, " ").trim();
+            const m = clean.match(/([0-9]+)\s*(?:-|to|\+)?\s*([0-9]*)/);
+            if (m) {
+                return m[2] ? `${m[1]}-${m[2]} yrs` : `${m[1]} yrs`;
+            }
+            return clean;
+        }
+        if (exp === 0) return "0-2 yrs";
+        return `${exp} yrs`;
     }
 
     function getStatusIcon(status) {

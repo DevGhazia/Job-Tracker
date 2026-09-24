@@ -26,6 +26,20 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) =>
         }
     }
 
+    function formatExperienceTag(exp) {
+        if (exp === null || exp === undefined || exp === "") return "0-2 yrs";
+        if (typeof exp === "string") {
+            const clean = exp.replace(/\s+/g, " ").trim();
+            const m = clean.match(/([0-9]+)\s*(?:-|to|\+)?\s*([0-9]*)/);
+            if (m) {
+                return m[2] ? `${m[1]}-${m[2]} yrs` : `${m[1]} yrs`;
+            }
+            return clean;
+        }
+        if (exp === 0) return "0-2 yrs";
+        return `${exp} yrs`;
+    }
+
     return (
         <section className="action-queue-section">
             <div className="action-queue-header">
@@ -88,7 +102,7 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) =>
                                 </div>
                                 <div className="tag-container">
                                     <FaBusinessTime className="tag-icon" />
-                                    <span>{app.experience !== undefined ? (app.experience === 0 ? "Entry-level" : `${app.experience}+ yrs`) : "0-2 yrs"}</span>
+                                    <span>{formatExperienceTag(app.experience)}</span>
                                 </div>
                                 <div className="tag-container queue-date-tag">
                                     <HiCalendar className="tag-icon" />

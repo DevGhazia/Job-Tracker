@@ -43,9 +43,18 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     }
   }
 
+  let cleanTag = "0-2 yrs";
+  if (minYoe !== null) {
+    if (minYoe === maxYoe || !maxYoe) {
+      cleanTag = `${minYoe} yrs`;
+    } else {
+      cleanTag = `${minYoe}-${maxYoe} yrs`;
+    }
+  }
+
   // Strict suitability check: Candidate has 2 YOE from IIT Roorkee.
   // Suitable if:
-  // 1. Min YOE is <= 2 (e.g. 0-2, 1-3, 2-4, 1-2, 2+ years)
+  // 1. Min YOE is <= 2 (e.g. 0-2, 1-3, 2-4, 1-2, 2 yrs)
   // 2. Job title is not Senior/Lead/Staff
   // Unsuitable if:
   // 1. Min YOE >= 3 (e.g. 3-5, 3+, 4+, 5+, 6+)
@@ -53,12 +62,10 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
   const isSenior = isSeniorTitle || (minYoe !== null && minYoe >= 3);
   const isSuitable = !isSenior && (minYoe === null || minYoe <= 2);
 
-  const displayExp = rawMatch || (minYoe !== null ? `${minYoe} - ${maxYoe} YOE` : "0 - 2 YOE");
-
   return {
     minYoe: minYoe !== null ? minYoe : 1,
     maxYoe: maxYoe !== null ? maxYoe : 2,
-    raw: displayExp,
+    raw: cleanTag,
     isSenior,
     isSuitable
   };
