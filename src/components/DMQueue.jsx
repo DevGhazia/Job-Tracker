@@ -1,7 +1,20 @@
 import { useState, useEffect } from "react";
 import { listenToDmLeads, updateDmLeadStatus, deleteDmLead } from "../utils_firebase";
 import CompanyLogo from "./CompanyLogo";
-import { FiSend, FiCopy, FiCheck, FiExternalLink, FiTrash2, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock, FiGlobe } from "react-icons/fi";
+import { 
+    FiSend, 
+    FiCopy, 
+    FiCheck, 
+    FiExternalLink, 
+    FiTrash2, 
+    FiCheckCircle, 
+    FiChevronDown, 
+    FiChevronUp, 
+    FiClock, 
+    FiGlobe,
+    FiMaximize2,
+    FiMinimize2
+} from "react-icons/fi";
 
 const CATEGORIES = {
     ALL: "all",
@@ -70,7 +83,7 @@ export default function DMQueue() {
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES.ALL);
     const [searchQuery, setSearchQuery] = useState("");
     const [copiedId, setCopiedId] = useState(null);
-    const [expandedDmIds, setExpandedDmIds] = useState(new Set());
+    const [expandedLeadIds, setExpandedLeadIds] = useState(new Set());
 
     useEffect(() => {
         const unsubscribe = listenToDmLeads(setRawLeads);
@@ -98,13 +111,21 @@ export default function DMQueue() {
         }
     });
 
-    const toggleExpandDm = (id) => {
-        setExpandedDmIds(prev => {
+    const toggleExpandLead = (id) => {
+        setExpandedLeadIds(prev => {
             const next = new Set(prev);
             if (next.has(id)) next.delete(id);
             else next.add(id);
             return next;
         });
+    };
+
+    const handleExpandAll = () => {
+        setExpandedLeadIds(new Set(filteredLeads.map(l => l.id)));
+    };
+
+    const handleCollapseAll = () => {
+        setExpandedLeadIds(new Set());
     };
 
     // Category count stats
@@ -131,7 +152,8 @@ export default function DMQueue() {
         return true;
     });
 
-    const handleCopyDm = (id, text, name) => {
+    const handleCopyDm = (id, text, name, e) => {
+        if (e) e.stopPropagation();
         navigator.clipboard.writeText(text);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2500);
@@ -142,7 +164,8 @@ export default function DMQueue() {
         window.dispatchEvent(event);
     };
 
-    const handleStatusChange = async (id, newStatus, name) => {
+    const handleStatusChange = async (id, newStatus, name, e) => {
+        if (e) e.stopPropagation();
         try {
             await updateDmLeadStatus(id, newStatus);
             const event = new CustomEvent("trigger-toast", {
@@ -154,7 +177,8 @@ export default function DMQueue() {
         }
     };
 
-    const handleDelete = async (id, name) => {
+    const handleDelete = async (id, name, e) => {
+        if (e) e.stopPropagation();
         try {
             await deleteDmLead(id);
             const event = new CustomEvent("trigger-toast", {
@@ -166,8 +190,11 @@ export default function DMQueue() {
         }
     };
 
+    const allExpanded = filteredLeads.length > 0 && filteredLeads.every(l => expandedLeadIds.has(l.id));
+
     return (
         <section className="action-queue-section dm-queue-section">
+            {/* Header */}
             <div className="action-queue-header">
                 <div className="list-heading-text">
                     <div className="section-title-wrapper">
@@ -179,6 +206,24 @@ export default function DMQueue() {
                     </p>
                 </div>
                 <div className="queue-header-actions">
+                    {filteredLeads.length > 0 && (
+                        <button
+                            type="button"
+                            className="dm-toggle-all-btn"
+                            onClick={allExpanded ? handleCollapseAll : handleExpandAll}
+                            title={allExpanded ? "Collapse all rows" : "Expand all rows"}
+                        >
+                            {allExpanded ? (
+                                <>
+                                    <FiMinimize2 /> Collapse All
+                                </>
+                            ) : (
+                                <>
+                                    <FiMaximize2 /> Expand All
+                                </>
+                            )}
+                        </button>
+                    )}
                     <span className="queue-count-pill dm-count-pill">{leads.length} Leads</span>
                 </div>
             </div>
@@ -229,24 +274,24 @@ export default function DMQueue() {
                 </div>
             </div>
 
-            {/* Cards Content */}
+            {/* Minimal Horizontal Collapsed List View */}
             {leads.length === 0 ? (
                 <div className="dm-empty-state">
                     <p className="dm-empty-title">🔍 No startup or hiring leads found right now.</p>
-                    <p className="dm-empty-desc">Run <code>node scripts/dm-hunter.mjs</code> or wait for the next scheduled startup scan.</p>
+                    <p className="dm-empty-desc">Run <code>node scripts/dm-hunter.mjs</code> or wait for the morning 9:47 AM startup scan.</p>
                 </div>
             ) : filteredLeads.length === 0 ? (
                 <div className="dm-empty-state">
                     <p className="dm-empty-desc">No leads match the selected filter.</p>
                 </div>
             ) : (
-                <div className="dm-cards-grid">
+                <div className="dm-queue-list">
                     {filteredLeads.map((lead) => {
                         const meta = CATEGORY_META[lead.category] || CATEGORY_META.hiring_post;
                         const isCopied = copiedId === lead.id;
                         const isContacted = lead.status === "Contacted";
                         const isReplied = lead.status === "Replied";
-                        const isExpanded = expandedDmIds.has(lead.id);
+                        const isExpanded = expandedLeadIds.has(lead.id);
                         
                         const timeAgo = formatRelativeTime(lead.sourceDate || lead.createdAt);
                         const linkedinUrl = getValidLinkedInUrl(lead);
@@ -255,143 +300,191 @@ export default function DMQueue() {
                         return (
                             <div
                                 key={lead.id}
-                                className={`dm-card card ${isContacted ? "card-contacted" : ""} ${isReplied ? "card-replied" : ""}`}
+                                className={`dm-queue-row card ${isExpanded ? "row-expanded" : "row-collapsed"} ${isContacted ? "card-contacted" : ""} ${isReplied ? "card-replied" : ""}`}
                             >
-                                {/* Header */}
-                                <div className="dm-card-header">
-                                    <div className="cell-logo-container">
-                                        <CompanyLogo logo={lead.companyLogo} company={lead.company} />
+                                {/* 1. Collapsed Horizontal Bar (Minimal Default Look) */}
+                                <div 
+                                    className="dm-row-collapsed-bar"
+                                    onClick={() => toggleExpandLead(lead.id)}
+                                    title="Click to expand / collapse details"
+                                >
+                                    {/* Left: Logo & Person Details */}
+                                    <div className="dm-row-left">
+                                        <div className="cell-logo-container dm-row-logo">
+                                            <CompanyLogo logo={lead.companyLogo} company={lead.company} />
+                                        </div>
+                                        <div className="dm-row-name-block">
+                                            <div className="dm-row-headline">
+                                                <h3 className="dm-row-person-name">{lead.name}</h3>
+                                                <span className={`portal-badge ${meta.class}`}>
+                                                    {meta.label}
+                                                </span>
+                                            </div>
+                                            <p className="dm-row-subtitle">
+                                                {lead.title} • <strong>{lead.company}</strong>
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="cell-name dm-card-name-block">
-                                        <h3 className="dm-card-name">{lead.name}</h3>
-                                        <p className="dm-card-subtitle">{lead.title} • <strong>{lead.company}</strong></p>
-                                        
-                                        {/* Tags aligned in a single neat row */}
-                                        <div className="dm-tags-single-row">
-                                            <span className={`portal-badge ${meta.class}`}>
-                                                {meta.label}
-                                            </span>
+
+                                    {/* Right: Meta Tags, Quick Actions & Chevron Dropdown */}
+                                    <div className="dm-row-right" onClick={(e) => e.stopPropagation()}>
+                                        <div className="dm-row-meta">
                                             <span className="dm-time-ago-tag" title={`Source publication date: ${timeAgo}`}>
                                                 <FiClock className="time-icon" /> {timeAgo}
                                             </span>
+
+                                            {lead.status === "New" && (
+                                                <span className="dm-status-tag tag-new">New</span>
+                                            )}
+                                            {lead.status === "Contacted" && (
+                                                <span className="dm-status-tag tag-contacted">Contacted</span>
+                                            )}
+                                            {lead.status === "Replied" && (
+                                                <span className="dm-status-tag tag-replied">🎉 Replied</span>
+                                            )}
+                                        </div>
+
+                                        <div className="dm-row-quick-actions">
+                                            {/* Quick 1-click Copy */}
+                                            <button
+                                                type="button"
+                                                className={`action-queue-apply-btn dm-compact-action-btn ${isCopied ? "copied" : ""}`}
+                                                onClick={(e) => handleCopyDm(lead.id, lead.tailoredDm, lead.name, e)}
+                                                title="Copy pre-drafted DM message"
+                                            >
+                                                {isCopied ? (
+                                                    <>
+                                                        <FiCheck /> <span>Copied!</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <FiCopy /> <span>Copy DM</span>
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {/* Direct LinkedIn Profile Link */}
+                                            <a
+                                                href={linkedinUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="dm-compact-link-btn"
+                                                title={`Open ${lead.name}'s profile on LinkedIn`}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <FiExternalLink /> <span>LinkedIn ↗</span>
+                                            </a>
+
+                                            {/* Dropdown Expand / Collapse Trigger */}
+                                            <button
+                                                type="button"
+                                                className={`dm-dropdown-toggle-btn ${isExpanded ? "active" : ""}`}
+                                                onClick={() => toggleExpandLead(lead.id)}
+                                                title={isExpanded ? "Collapse details" : "Expand details"}
+                                            >
+                                                <span>{isExpanded ? "Hide" : "Details"}</span>
+                                                {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                                            </button>
+
+                                            {/* Delete / Dismiss Button */}
+                                            <button
+                                                type="button"
+                                                className="dm-compact-delete-btn"
+                                                onClick={(e) => handleDelete(lead.id, lead.name, e)}
+                                                title="Dismiss Lead"
+                                            >
+                                                <FiTrash2 />
+                                            </button>
                                         </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        className="dm-large-delete-btn"
-                                        onClick={() => handleDelete(lead.id, lead.name)}
-                                        title="Dismiss Lead"
-                                    >
-                                        <FiTrash2 className="dm-trash-icon" />
-                                    </button>
                                 </div>
 
-                                {/* Discovery Signal */}
-                                {lead.sourceSnippet && (
-                                    <div className="dm-signal-callout">
-                                        <span className="dm-signal-label">Discovery Signal ({timeAgo})</span>
-                                        <p className="dm-signal-text">"{lead.sourceSnippet}"</p>
+                                {/* 2. Expanded Drawer (Shows on Dropdown Click) */}
+                                {isExpanded && (
+                                    <div className="dm-row-expanded-drawer">
+                                        {/* Discovery Signal Callout */}
+                                        {lead.sourceSnippet && (
+                                            <div className="dm-signal-callout">
+                                                <span className="dm-signal-label">Discovery Signal ({timeAgo})</span>
+                                                <p className="dm-signal-text">"{lead.sourceSnippet}"</p>
+                                            </div>
+                                        )}
+
+                                        {/* Pre-Drafted DM Box */}
+                                        <div className="dm-message-box expanded">
+                                            <div className="dm-message-header">
+                                                <span className="dm-message-label">📝 Pre-Drafted Personalized Message</span>
+                                                <button
+                                                    type="button"
+                                                    className={`action-queue-apply-btn dm-copy-btn ${isCopied ? "copied" : ""}`}
+                                                    onClick={(e) => handleCopyDm(lead.id, lead.tailoredDm, lead.name, e)}
+                                                >
+                                                    {isCopied ? (
+                                                        <>
+                                                            <FiCheck /> Copied!
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FiCopy /> Copy Message
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <pre className="dm-pre-text">{lead.tailoredDm}</pre>
+                                        </div>
+
+                                        {/* Full Action Footer */}
+                                        <div className="dm-card-footer">
+                                            <div className="dm-footer-links">
+                                                <a
+                                                    href={linkedinUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="dm-footer-btn dm-linkedin-btn"
+                                                    title={`Open ${lead.name}'s profile on LinkedIn`}
+                                                >
+                                                    <FiExternalLink className="dm-footer-btn-icon" /> LinkedIn Profile ↗
+                                                </a>
+
+                                                <a
+                                                    href={sourceUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="dm-footer-btn dm-source-btn"
+                                                    title="View original hiring post or funding announcement"
+                                                >
+                                                    <FiGlobe className="dm-footer-btn-icon" /> View Source Announcement ↗
+                                                </a>
+                                            </div>
+
+                                            <div className="dm-status-actions">
+                                                {lead.status === "New" && (
+                                                    <button
+                                                        type="button"
+                                                        className="dm-pill-status pill-status-contacted"
+                                                        onClick={(e) => handleStatusChange(lead.id, "Contacted", lead.name, e)}
+                                                    >
+                                                        <FiSend /> Mark Contacted
+                                                    </button>
+                                                )}
+                                                {lead.status === "Contacted" && (
+                                                    <button
+                                                        type="button"
+                                                        className="dm-pill-status pill-status-replied"
+                                                        onClick={(e) => handleStatusChange(lead.id, "Replied", lead.name, e)}
+                                                    >
+                                                        <FiCheckCircle /> Mark Replied
+                                                    </button>
+                                                )}
+                                                {lead.status === "Replied" && (
+                                                    <span className="dm-replied-badge">
+                                                        🎉 Replied
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
-
-                                {/* Collapsible Pre-drafted DM Box */}
-                                <div className={`dm-message-box ${isExpanded ? "expanded" : "collapsed"}`}>
-                                    <div className="dm-message-header">
-                                        <button
-                                            type="button"
-                                            className="dm-expand-toggle-btn"
-                                            onClick={() => toggleExpandDm(lead.id)}
-                                        >
-                                            <span className="dm-message-label">📝 Pre-Drafted DM</span>
-                                            {isExpanded ? (
-                                                <span className="dm-toggle-text"><FiChevronUp /> Collapse</span>
-                                            ) : (
-                                                <span className="dm-toggle-text"><FiChevronDown /> Expand message</span>
-                                            )}
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className={`action-queue-apply-btn dm-copy-btn ${isCopied ? "copied" : ""}`}
-                                            onClick={() => handleCopyDm(lead.id, lead.tailoredDm, lead.name)}
-                                        >
-                                            {isCopied ? (
-                                                <>
-                                                    <FiCheck /> Copied!
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FiCopy /> Copy DM
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    {isExpanded ? (
-                                        <pre className="dm-pre-text">{lead.tailoredDm}</pre>
-                                    ) : (
-                                        <div
-                                            className="dm-collapsed-preview"
-                                            onClick={() => toggleExpandDm(lead.id)}
-                                            title="Click to expand message"
-                                        >
-                                            <p className="dm-preview-snippet">
-                                                {lead.tailoredDm.split("\n")[0]}... <span className="dm-click-to-read">(click to read full)</span>
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Footer Actions - 3 Distinct Action Buttons */}
-                                <div className="dm-card-footer">
-                                    <div className="dm-footer-links">
-                                        <a
-                                            href={linkedinUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="dm-footer-btn dm-linkedin-btn"
-                                            title={`Open ${lead.name}'s profile on LinkedIn`}
-                                        >
-                                            <FiExternalLink className="dm-footer-btn-icon" /> LinkedIn Profile ↗
-                                        </a>
-
-                                        <a
-                                            href={sourceUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="dm-footer-btn dm-source-btn"
-                                            title="View original hiring post or funding announcement"
-                                        >
-                                            <FiGlobe className="dm-footer-btn-icon" /> View Source ↗
-                                        </a>
-                                    </div>
-
-                                    <div className="dm-status-actions">
-                                        {lead.status === "New" && (
-                                            <button
-                                                type="button"
-                                                className="dm-pill-status pill-status-contacted"
-                                                onClick={() => handleStatusChange(lead.id, "Contacted", lead.name)}
-                                            >
-                                                <FiSend /> Mark Contacted
-                                            </button>
-                                        )}
-                                        {lead.status === "Contacted" && (
-                                            <button
-                                                type="button"
-                                                className="dm-pill-status pill-status-replied"
-                                                onClick={() => handleStatusChange(lead.id, "Replied", lead.name)}
-                                            >
-                                                <FiCheckCircle /> Mark Replied
-                                            </button>
-                                        )}
-                                        {lead.status === "Replied" && (
-                                            <span className="dm-replied-badge">
-                                                🎉 Replied
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
                             </div>
                         );
                     })}
@@ -400,8 +493,3 @@ export default function DMQueue() {
         </section>
     );
 }
-
-
-
-
-
