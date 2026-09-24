@@ -640,11 +640,15 @@ export async function fetchMultiPortalJobs() {
   return results;
 }
 
-export async function discoverLiveJobs() {
-  console.log("🔍 Scanning across ALL companies on LinkedIn, Greenhouse, Lever, Y Combinator, Wellfound, Instahyre, Cutshort & Naukri (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
+export async function discoverLiveJobs({ enableDeepSearch = true } = {}) {
+  if (enableDeepSearch) {
+    console.log("🔍 [Deep Mode] Scanning across LinkedIn, Greenhouse, Lever, Y Combinator, Wellfound, Instahyre, Cutshort & Naukri (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
+  } else {
+    console.log("⚡ [Free Mode] Scanning across LinkedIn Direct & ATS Boards (Greenhouse, Lever) at 0 credit cost...");
+  }
   const allJobs = [];
 
-  // 1. Direct Curated ATS API endpoints (Fast Seed)
+  // 1. Direct Curated ATS API endpoints (Fast Seed - 100% Free)
   for (const company of TARGET_ATS_COMPANIES) {
     let jobs = [];
     if (company.portal === "Greenhouse") {
@@ -658,18 +662,20 @@ export async function discoverLiveJobs() {
     }
   }
 
-  // 2. LinkedIn Live Search (Any company)
+  // 2. LinkedIn Live Search (Direct Public API - 100% Free)
   const linkedInJobs = await fetchLinkedInJobs();
   if (linkedInJobs.length > 0) {
     console.log(`✅ [LinkedIn] Found ${linkedInJobs.length} verified 0-2 YOE Frontend opening(s) across companies`);
     allJobs.push(...linkedInJobs);
   }
 
-  // 3. Universal Multi-Portal Discovery (Any company across Greenhouse, Lever, YC, Wellfound, Instahyre, Cutshort, Naukri)
-  const portalJobs = await fetchMultiPortalJobs();
-  if (portalJobs.length > 0) {
-    console.log(`✅ [Universal Discovery] Found ${portalJobs.length} verified opening(s) across all platforms & companies`);
-    allJobs.push(...portalJobs);
+  // 3. Universal Multi-Portal Discovery (YC, Wellfound, Instahyre, Cutshort, Naukri - Deep Mode)
+  if (enableDeepSearch) {
+    const portalJobs = await fetchMultiPortalJobs();
+    if (portalJobs.length > 0) {
+      console.log(`✅ [Universal Discovery] Found ${portalJobs.length} verified opening(s) across all platforms & companies`);
+      allJobs.push(...portalJobs);
+    }
   }
 
   return allJobs;

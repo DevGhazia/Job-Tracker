@@ -1,0 +1,35 @@
+name: Deep Multi-Portal Job Discovery (2x Daily)
+
+on:
+  schedule:
+    # Runs 2 times daily at 9:47 AM (~10 AM) & 9:47 PM (~10 PM) IST (04:17, 16:17 UTC)
+    - cron: '17 4,16 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  deep-job-discovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Deep Multi-Portal Job Hunter
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_JOBS_WEBHOOK_URL: ${{ secrets.DISCORD_JOBS_WEBHOOK_URL }}
+          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+          WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
+        run: node scripts/search-and-queue.mjs --deep

@@ -32,7 +32,12 @@ const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
 async function runSearchAndQueue() {
   const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
-  const jobs = await discoverLiveJobs();
+  
+  const args = process.argv.slice(2);
+  const isFreeOnly = args.includes("--free-only") || process.env.SEARCH_MODE === "free";
+  const enableDeepSearch = !isFreeOnly;
+
+  const jobs = await discoverLiveJobs({ enableDeepSearch });
 
   if (jobs.length === 0) {
     console.log("No new jobs found matching your criteria.");
