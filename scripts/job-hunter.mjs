@@ -585,15 +585,13 @@ export function extractCompanyAndRole(title = "", url = "", portalName = "") {
 
 export async function fetchMultiPortalJobs() {
   if (!firecrawlClient) return [];
-  // Curated portals: Greenhouse, Lever, YC, Wellfound, Instahyre, Cutshort, Naukri
+  // Curated portals: YC, Wellfound, Instahyre, Cutshort, Naukri (Greenhouse & Lever run 100% free via direct ATS APIs)
   const portalSearches = [
     { portalName: "Y Combinator", query: "site:workatastartup.com/jobs (\"Frontend\" OR \"React\") (\"India\" OR \"Remote\")" },
     { portalName: "Wellfound", query: "site:wellfound.com/jobs (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
     { portalName: "Instahyre", query: "site:instahyre.com/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\" OR \"Bangalore\")" },
     { portalName: "Cutshort", query: "site:cutshort.io/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\")" },
-    { portalName: "Naukri", query: "site:naukri.com/job-listings (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"0 to 2 years\" OR \"1 to 3 years\" OR \"2 to 4 years\" OR \"React\")" },
-    { portalName: "Greenhouse Direct", query: "site:boards.greenhouse.io (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
-    { portalName: "Lever Direct", query: "site:jobs.lever.co (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" }
+    { portalName: "Naukri", query: "site:naukri.com/job-listings (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"0 to 2 years\" OR \"1 to 3 years\" OR \"2 to 4 years\" OR \"React\")" }
   ];
 
   const results = [];
