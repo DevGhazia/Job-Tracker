@@ -72,8 +72,77 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
 }
 
 /**
+ * Checks live page body text, HTML, and URL for posting recency.
+ * Strictly enforces <= 1 day old (today or yesterday).
+ * @param {string} bodyText 
+ * @param {string} html 
+ * @param {string} url 
+ * @returns {{ isFresh: boolean, reason?: string }}
+ */
+export function parseDateFreshnessFromPage(bodyText = "", html = "", url = "") {
+  const combined = (bodyText + " " + html).toLowerCase();
+
+  // 1. Naukri URL date check (ddmmyy prefix in URL)
+  if (url.includes("naukri.com")) {
+    const idMatch = url.match(/(\d{6,})/);
+    if (idMatch) {
+      const digits = idMatch[1];
+      const dd = parseInt(digits.slice(0, 2), 10);
+      const mm = parseInt(digits.slice(2, 4), 10);
+      const yy = parseInt(digits.slice(4, 6), 10);
+      if (dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12) {
+        const postYear = 2000 + yy;
+        const now = new Date();
+        const postDate = new Date(postYear, mm - 1, dd);
+        const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (diffDays > 1.5 || diffDays < -1) {
+          return { isFresh: false, reason: `Naukri post date is ${Math.round(diffDays)} days old` };
+        }
+      }
+    }
+  }
+
+  // 2. Closed / expired indicators
+  const closedIndicators = [
+    "no longer accepting applications",
+    "job is closed",
+    "job has expired",
+    "this job is no longer available",
+    "position has been filled",
+    "this opening has been archived",
+    "this job is inactive",
+    "application is closed"
+  ];
+  for (const ind of closedIndicators) {
+    if (combined.includes(ind)) {
+      return { isFresh: false, reason: `Job is closed or expired ('${ind}')` };
+    }
+  }
+
+  // 3. Stale relative date keywords (>= 2 days old)
+  const staleRelativePatterns = [
+    /\bposted\s*:\s*(?:[2-9]|\d{2,})\s*days?\s*ago\b/i,
+    /\bposted\s+(?:[2-9]|\d{2,})\s*days?\s*ago\b/i,
+    /\bposted\s*:\s*\d+\s*(?:weeks?|months?|years?)\s*ago\b/i,
+    /\bposted\s+\d+\s*(?:weeks?|months?|years?)\s*ago\b/i,
+    /\b(?:[2-9]|\d{2,})\s*days?\s*ago\b/i,
+    /\b\d+\s*(?:weeks?|months?|years?)\s*ago\b/i,
+    /\b(?:30\+|15|20)\s*days?\s*ago\b/i
+  ];
+
+  for (const pattern of staleRelativePatterns) {
+    const match = bodyText.match(pattern);
+    if (match) {
+      return { isFresh: false, reason: `Stale posting date: "${match[0]}"` };
+    }
+  }
+
+  return { isFresh: true };
+}
+
+/**
  * Proofreads a job posting using lightweight headless Playwright.
- * Visits the source page, expands "Show more" / "See more", and extracts exact YOE.
+ * Visits the source page, expands "Show more" / "See more", and extracts exact YOE and recency.
  * 
  * @param {string} jobUrl 
  * @param {string} [jobTitle]
@@ -137,9 +206,22 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
 
     // Extract text from the main job description container or body
     const bodyText = await page.innerText("body");
-    const parsed = parseExperienceFromText(bodyText, jobTitle);
+    const html = await page.content();
 
     await context.close();
+
+    // 1. Freshness & Active Status Check (Must be <= 1 day old)
+    const freshness = parseDateFreshnessFromPage(bodyText, html, jobUrl);
+    if (!freshness.isFresh) {
+      return {
+        verifiedExperience: "0 - 2 YOE",
+        isSuitable: false,
+        reason: freshness.reason
+      };
+    }
+
+    // 2. Experience Requirements Check (Must be 0-2 YOE)
+    const parsed = parseExperienceFromText(bodyText, jobTitle);
 
     if (!parsed.isSuitable) {
       return {

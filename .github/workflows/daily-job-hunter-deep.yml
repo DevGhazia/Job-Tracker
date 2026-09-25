@@ -1,9 +1,9 @@
-name: Deep Multi-Portal Job Discovery (2x Daily)
+name: Deep Multi-Portal Job Discovery (1x Daily)
 
 on:
   schedule:
-    # Runs 2 times daily at 9:47 AM (~10 AM) & 9:47 PM (~10 PM) IST (04:17, 16:17 UTC)
-    - cron: '17 4,16 * * *'
+    # Runs 1 time daily at 9:47 AM (~10 AM) IST (04:17 UTC)
+    - cron: '17 4 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 jobs:

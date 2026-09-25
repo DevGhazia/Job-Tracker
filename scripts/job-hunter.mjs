@@ -194,26 +194,69 @@ function isValidTitle(title = "") {
   return TARGET_TECH_KEYWORDS.some(kw => t.includes(kw));
 }
 
+/**
+ * Checks if a Naukri URL is fresh (<= 1.5 days old based on the ddmmyy ID in URL).
+ */
+export function isNaukriUrlFresh(url = "") {
+  if (!url || !url.includes("naukri.com")) return true;
+  const idMatch = url.match(/(\d{6,})/);
+  if (!idMatch) return true;
+  const digits = idMatch[1];
+  const dd = parseInt(digits.slice(0, 2), 10);
+  const mm = parseInt(digits.slice(2, 4), 10);
+  const yy = parseInt(digits.slice(4, 6), 10);
+  if (dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12) {
+    const postYear = 2000 + yy;
+    const now = new Date();
+    const postDate = new Date(postYear, mm - 1, dd);
+    const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24);
+    // Strictly <= 1.5 days old
+    if (diffDays > 1.5 || diffDays < -1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Checks if search result snippet / title text is fresh (<= 1 day old).
+ * Rejects any mention of 2+ days ago, weeks ago, months ago, or older years.
+ */
+export function isSnippetFresh1Day(text = "") {
+  if (!text) return true;
+  const lower = text.toLowerCase();
+
+  // Stale relative time patterns: >= 2 days, weeks, months, years
+  const staleRelative = [
+    /\b(?:[2-9]|\d{2,})\s*days?\s*ago\b/i,
+    /\b(?:[2-9]|\d{2,})\s*d\s*ago\b/i,
+    /\b\d+\s*(?:weeks?|wks?|months?|mos?|years?|yrs?)\s*ago\b/i,
+    /\b(?:a|1)\s*(?:week|month|year)\s*ago\b/i,
+    /\b(?:30\+|15|20)\s*days?\s*ago\b/i
+  ];
+
+  for (const regex of staleRelative) {
+    if (regex.test(lower)) {
+      return false;
+    }
+  }
+
+  // Stale years (prior to 2026)
+  const currentYear = new Date().getFullYear();
+  for (let y = 2018; y < currentYear; y++) {
+    if (lower.includes(String(y))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function verifyLiveJobPage(url, portalName = "") {
   try {
     // 1. Naukri ID Date check
-    if (portalName.toLowerCase().includes("naukri") || url.includes("naukri.com")) {
-      const idMatch = url.match(/(\d{6,})/);
-      if (idMatch) {
-        const digits = idMatch[1];
-        const dd = parseInt(digits.slice(0, 2), 10);
-        const mm = parseInt(digits.slice(2, 4), 10);
-        const yy = parseInt(digits.slice(4, 6), 10);
-        if (dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12) {
-          const postYear = 2000 + yy;
-          const now = new Date();
-          const postDate = new Date(postYear, mm - 1, dd);
-          const diffDays = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24);
-          if (diffDays > 3 || diffDays < -1) {
-            return { valid: false, reason: `Naukri post is ${Math.round(diffDays)} days old` };
-          }
-        }
-      }
+    if (!isNaukriUrlFresh(url)) {
+      return { valid: false, reason: "Naukri post is older than 1 day" };
     }
 
     const res = await fetch(url, {
@@ -257,17 +300,24 @@ export async function verifyLiveJobPage(url, portalName = "") {
       }
     }
 
-    // Check for stale date keywords
+    // Check for stale date keywords (>= 2 days old)
     const staleDateIndicators = [
+      "2 days ago",
+      "3 days ago",
+      "4 days ago",
+      "5 days ago",
+      "6 days ago",
+      "7 days ago",
       "30+ days ago",
       "30+ d ago",
       "1 month ago",
       "2 months ago",
       "3 months ago",
       "4 months ago",
-      "4 weeks ago",
-      "3 weeks ago",
+      "1 week ago",
       "2 weeks ago",
+      "3 weeks ago",
+      "4 weeks ago",
       "15 days ago",
       "20 days ago"
     ];
@@ -284,7 +334,7 @@ export async function verifyLiveJobPage(url, portalName = "") {
   }
 }
 
-// Live LinkedIn Search - Card by card isolation, posted in last 3 days (f_TPR=r259200), deep JD verification with fast fallback
+// Live LinkedIn Search - Card by card isolation, posted in last 24h / 1 day (f_TPR=r86400), deep JD verification with fast fallback
 export async function fetchLinkedInJobs() {
   const queries = [
     { q: "frontend developer", loc: "India" },
@@ -296,8 +346,8 @@ export async function fetchLinkedInJobs() {
 
   for (const { q, loc } of queries) {
     try {
-      // f_TPR=r259200 ensures posted <= 3 days ago, f_E=1,2 filters for entry/associate level
-      const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r259200&f_E=1%2C2`;
+      // f_TPR=r86400 ensures posted <= 24 hours / 1 day ago, f_E=1,2 filters for entry/associate level
+      const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r86400&f_E=1%2C2`;
       const res = await fetch(searchUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -372,9 +422,14 @@ export async function fetchLinkedInJobs() {
           continue;
         }
 
-        // Strict recency check: skip if older than 3 days
+        // Strict recency check: skip if older than 1 day
         if (postedTimeAgo) {
-          const staleCheck = ["week", "month", "year", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", "11 day", "12 day", "13 day", "14 day", "15 day", "20 day", "30 day"];
+          const staleCheck = [
+            "week", "month", "year", 
+            "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", 
+            "11 day", "12 day", "13 day", "14 day", "15 day", "20 day", "30 day",
+            "2d", "3d", "4d", "5d", "1w", "2w", "1mo"
+          ];
           if (staleCheck.some(s => postedTimeAgo.includes(s))) {
             console.log(`⏩ Skipping outdated LinkedIn job (${postedTimeAgo}): ${title} at ${company}`);
             continue;
@@ -452,12 +507,12 @@ export async function fetchGreenhouseJobs(companyObj) {
     const jobs = data.jobs || [];
 
     const matched = [];
-    const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = Date.now() - (1 * 24 * 60 * 60 * 1000); // 1 day limit
     const clearoutLogo = await fetchClearoutLogo(companyObj.company);
 
     for (const j of jobs) {
-      if (j.updated_at && new Date(j.updated_at).getTime() < threeDaysAgo) {
-        continue; // Discard postings older than 3 days
+      if (j.updated_at && new Date(j.updated_at).getTime() < oneDayAgo) {
+        continue; // Discard postings older than 1 day
       }
 
       if (!isValidTitle(j.title)) continue;
@@ -492,12 +547,12 @@ export async function fetchLeverJobs(companyObj) {
     if (!Array.isArray(jobs)) return [];
 
     const matched = [];
-    const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = Date.now() - (1 * 24 * 60 * 60 * 1000); // 1 day limit
     const clearoutLogo = await fetchClearoutLogo(companyObj.company);
 
     for (const j of jobs) {
-      if (j.createdAt && j.createdAt < threeDaysAgo) {
-        continue; // Discard postings older than 3 days
+      if (j.createdAt && j.createdAt < oneDayAgo) {
+        continue; // Discard postings older than 1 day
       }
 
       if (!isValidTitle(j.text)) continue;
@@ -587,11 +642,11 @@ export async function fetchMultiPortalJobs() {
   if (!firecrawlClient) return [];
   // Curated portals: YC, Wellfound, Instahyre, Cutshort, Naukri (Greenhouse & Lever run 100% free via direct ATS APIs)
   const portalSearches = [
-    { portalName: "Y Combinator", query: "site:workatastartup.com/jobs (\"Frontend\" OR \"React\") (\"India\" OR \"Remote\")" },
-    { portalName: "Wellfound", query: "site:wellfound.com/jobs (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\")" },
-    { portalName: "Instahyre", query: "site:instahyre.com/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"India\" OR \"Remote\" OR \"Bangalore\")" },
-    { portalName: "Cutshort", query: "site:cutshort.io/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\")" },
-    { portalName: "Naukri", query: "site:naukri.com/job-listings (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"0 to 2 years\" OR \"1 to 3 years\" OR \"2 to 4 years\" OR \"React\")" }
+    { portalName: "Y Combinator", query: "site:workatastartup.com/jobs (\"Frontend\" OR \"React\") (\"India\" OR \"Remote\") (\"today\" OR \"1 day ago\" OR \"hours ago\" OR \"2026\")" },
+    { portalName: "Wellfound", query: "site:wellfound.com/jobs (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"today\" OR \"1 day ago\" OR \"hours ago\" OR \"just now\") (\"India\" OR \"Remote\")" },
+    { portalName: "Instahyre", query: "site:instahyre.com/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"today\" OR \"1 day ago\" OR \"hours ago\" OR \"just now\") (\"India\" OR \"Remote\" OR \"Bangalore\")" },
+    { portalName: "Cutshort", query: "site:cutshort.io/job (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"today\" OR \"1 day ago\" OR \"hours ago\")" },
+    { portalName: "Naukri", query: "site:naukri.com/job-listings (\"Frontend Developer\" OR \"React Developer\" OR \"UI Engineer\") (\"0 to 2 years\" OR \"1 to 2 years\" OR \"React\") (\"today\" OR \"1 day ago\" OR \"just now\" OR \"hours ago\")" }
   ];
 
   const results = [];
@@ -609,12 +664,24 @@ export async function fetchMultiPortalJobs() {
 
         if (!url || seen.has(url)) continue;
 
+        // 1. Strict 1-day freshness checks
+        if (!isNaukriUrlFresh(url)) {
+          console.log(`⏩ [Deep Search Filter] Skipping stale Naukri URL: ${url}`);
+          continue;
+        }
+        if (!isSnippetFresh1Day(desc + " " + rawTitle)) {
+          console.log(`⏩ [Deep Search Filter] Skipping stale snippet (${portalName}): ${rawTitle}`);
+          continue;
+        }
+
         const { company, role } = extractCompanyAndRole(rawTitle, url, portalName);
 
         if (!isValidTitle(role)) continue;
         if (isStrictlyBackendOnly(desc)) continue;
 
         const expCheck = extractExperience(desc);
+        if (!expCheck.valid) continue;
+
         const clearoutLogo = await fetchClearoutLogo(company);
 
         seen.add(url);
@@ -640,9 +707,9 @@ export async function fetchMultiPortalJobs() {
 
 export async function discoverLiveJobs({ enableDeepSearch = true } = {}) {
   if (enableDeepSearch) {
-    console.log("🔍 [Deep Mode] Scanning across LinkedIn, Greenhouse, Lever, Y Combinator, Wellfound, Instahyre, Cutshort & Naukri (<= 2 YOE, pure Frontend/React, posted <= 3 days ago)...");
+    console.log("🔍 [Deep Mode] Scanning across LinkedIn, Greenhouse, Lever, Y Combinator, Wellfound, Instahyre, Cutshort & Naukri (<= 2 YOE, pure Frontend/React, posted <= 1 day ago)...");
   } else {
-    console.log("⚡ [Free Mode] Scanning across LinkedIn Direct & ATS Boards (Greenhouse, Lever) at 0 credit cost...");
+    console.log("⚡ [Free Mode] Scanning across LinkedIn Direct & ATS Boards (Greenhouse, Lever) at 0 credit cost (posted <= 1 day ago)...");
   }
   const allJobs = [];
 

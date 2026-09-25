@@ -99,16 +99,16 @@ async function runSearchAndQueue() {
       continue;
     }
 
-    // 🔬 STAGE 2: Playwright Source Page Proofreading
+    // 🔬 STAGE 2: Playwright Source Page Proofreading (Recency & Experience)
     let verifiedExp = job.experience || "0 - 2 YOE";
     if (playwrightBrowser && job.jobUrl) {
-      const proof = await proofreadJobWithPlaywright(job.jobUrl, playwrightBrowser);
+      const proof = await proofreadJobWithPlaywright(job.jobUrl, job.role, playwrightBrowser);
       if (!proof.isSuitable) {
         console.log(`🚫 [Playwright Proofreader Rejection] Skipping ${job.role} at ${job.company}: ${proof.reason}`);
-        continue; // Drop jobs whose source page demands senior/3+ YOE!
+        continue; // Drop jobs whose source page demands senior/3+ YOE or is older than 1 day!
       }
       verifiedExp = proof.verifiedExperience || verifiedExp;
-      console.log(`✅ [Playwright Verified 0-2 YOE] ${job.role} at ${job.company} (${verifiedExp})`);
+      console.log(`✅ [Playwright Verified Fresh 0-2 YOE] ${job.role} at ${job.company} (${verifiedExp})`);
     }
 
     const tailoredPitch = generateTailoredPitch(job, profile);
