@@ -139,28 +139,33 @@ async function runSearchAndQueue() {
 
   console.log(`\n🎉 Successfully queued ${queuedCount} new jobs to your Action Queue!`);
 
+  const searchTypeLabel = enableDeepSearch ? "DEEP SEARCH" : "REGULAR SEARCH";
+  const icon = enableDeepSearch ? "🟣" : "⚡";
+  const timeString = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+
   if (queuedCount > 0) {
     const summary = newlyQueued
       .slice(0, 5)
       .map((j) => `• *${j.company}* — ${j.role} (${j.portalName || j.source})`)
       .join("\n");
-    const alertMsg = `🎯 *${queuedCount} New Frontend Role(s) Queued*\n\n${summary}\n\n👉 Action Queue: https://thejobtracker.vercel.app/`;
+    const alertMsg = `${icon} *${searchTypeLabel} — ${queuedCount} new ${queuedCount === 1 ? "posting" : "postings"}*\n\n${summary}\n\n👉 Action Queue: https://thejobtracker.vercel.app/`;
     await sendJobAlert({
       count: queuedCount,
       jobs: newlyQueued,
+      searchType: searchTypeLabel,
       text: alertMsg
     });
   } else {
-    const timeString = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
-    
     await sendDiscordNotification({
       embeds: [
         {
-          title: `🟢 Scan Complete • Tracker Up-to-Date`,
-          description: `No new postings right now.`,
+          title: `${enableDeepSearch ? "🟣" : "🟢"} ${searchTypeLabel} — no new posting`,
+          description: enableDeepSearch
+            ? `Deep scan across YC, Wellfound, Instahyre, Cutshort, Naukri, LinkedIn & ATS complete. Tracker is up-to-date.`
+            : `Regular scan across LinkedIn & Direct ATS complete. Tracker is up-to-date.`,
           color: 0x10b981,
           footer: {
-            text: `Job Tracker • ${timeString} IST • Next scan in ~4 hrs`
+            text: `Job Tracker • ${searchTypeLabel} • ${timeString} IST`
           },
           url: "https://thejobtracker.vercel.app/"
         }

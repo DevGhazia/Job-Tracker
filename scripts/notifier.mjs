@@ -77,7 +77,10 @@ export async function sendDiscordNotification(payload) {
     if (typeof payload === "string") {
       bodyData = { content: payload };
     } else if (payload && payload.jobs) {
-      const { jobs = [], count = jobs.length } = payload;
+      const { jobs = [], count = jobs.length, searchType = "REGULAR SEARCH" } = payload;
+      const isDeep = searchType.toUpperCase().includes("DEEP");
+      const icon = isDeep ? "🟣" : "⚡";
+      const embedColor = isDeep ? 0x8b5cf6 : 0x3b82f6;
       const hasFallbacks = jobs.some(j => j.isFallback);
       const fields = jobs.slice(0, 6).map((j, i) => {
         const fallbackBadge = j.isFallback ? " • 🛡️ *Fast Fallback*" : "";
@@ -92,16 +95,18 @@ export async function sendDiscordNotification(payload) {
         ? "\n\n🛡️ *Note: Some listings were preserved via Fast-Card Fallback.*"
         : "";
 
+      const timeString = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+
       bodyData = {
         embeds: [
           {
-            title: `🎯 ${count} New Frontend Role(s) Queued`,
+            title: `${icon} ${searchType.toUpperCase()} — ${count} new ${count === 1 ? 'posting' : 'postings'}`,
             description: `Ready in your [Action Queue](https://thejobtracker.vercel.app/)${fallbackNote}`,
-            color: 0x3b82f6,
+            color: embedColor,
             fields: fields,
             url: "https://thejobtracker.vercel.app/",
             footer: {
-              text: "Job Tracker • Next scan in ~4 hrs"
+              text: `Job Tracker • ${searchType} • ${timeString} IST`
             },
             timestamp: new Date().toISOString()
           }
