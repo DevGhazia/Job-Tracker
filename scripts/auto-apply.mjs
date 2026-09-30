@@ -116,6 +116,80 @@ async function fillAshby(page, pitch) {
   await tryFill(page, ['textarea[name="coverLetter"]', 'textarea[placeholder*="cover" i]'], pitch);
 }
 
+
+async function fillWorkable(page, pitch) {
+  await tryFill(page, ['input[name="firstname"]', 'input[name="first_name"]', '#firstname', 'input[placeholder*="First name" i]'], F.firstName);
+  await tryFill(page, ['input[name="lastname"]', 'input[name="last_name"]', '#lastname', 'input[placeholder*="Last name" i]'], F.lastName);
+  await tryFill(page, ['input[name="email"]', '#email', 'input[type="email"]'], F.email);
+  await tryFill(page, ['input[name="phone"]', '#phone', 'input[type="tel"]'], F.phone);
+  await tryFill(page, ['input[name="address"]', 'input[name="city"]', 'input[placeholder*="Location" i]'], F.location);
+  await tryFill(page, ['input[name="social_links[linkedin]"]', 'input[placeholder*="LinkedIn" i]', 'input[name*="linkedin" i]'], F.linkedin);
+  await tryFill(page, ['input[name="social_links[github]"]', 'input[placeholder*="GitHub" i]', 'input[name*="github" i]'], F.github);
+  await tryFill(page, ['input[name="social_links[portfolio]"]', 'input[placeholder*="Portfolio" i]', 'input[name*="portfolio" i]'], F.portfolio);
+  await tryFill(page, ['textarea[name="summary"]', 'textarea[name="cover_letter"]', 'textarea[placeholder*="Cover letter" i]'], pitch);
+}
+
+async function fillSmartRecruiters(page, pitch) {
+  await tryFill(page, ['input[name="firstName"]', '#first-name-input', 'input[placeholder*="First name" i]'], F.firstName);
+  await tryFill(page, ['input[name="lastName"]', '#last-name-input', 'input[placeholder*="Last name" i]'], F.lastName);
+  await tryFill(page, ['input[name="email"]', '#email-input', 'input[type="email"]'], F.email);
+  await tryFill(page, ['input[name="phoneNumber"]', '#phone-number-input', 'input[type="tel"]'], F.phone);
+  await tryFill(page, ['input[name="linkedin"]', 'input[placeholder*="LinkedIn" i]'], F.linkedin);
+  await tryFill(page, ['input[name="website"]', 'input[placeholder*="Website" i]', 'input[placeholder*="Portfolio" i]'], F.portfolio);
+  await tryFill(page, ['textarea[name="messageToHiringManager"]', 'textarea[placeholder*="message" i]'], pitch);
+}
+
+async function fillBambooHR(page, pitch) {
+  await tryFill(page, ['input[name="firstName"]', '#firstName', 'input[placeholder*="First Name" i]'], F.firstName);
+  await tryFill(page, ['input[name="lastName"]', '#lastName', 'input[placeholder*="Last Name" i]'], F.lastName);
+  await tryFill(page, ['input[name="email"]', '#email', 'input[type="email"]'], F.email);
+  await tryFill(page, ['input[name="phone"]', '#phone', 'input[type="tel"]'], F.phone);
+  await tryFill(page, ['input[name="linkedin"]', 'input[placeholder*="LinkedIn" i]'], F.linkedin);
+  await tryFill(page, ['input[name="website"]', 'input[placeholder*="Website" i]'], F.portfolio);
+  await tryFill(page, ['textarea[name="coverLetter"]', '#coverLetter'], pitch);
+}
+
+async function fillBreezy(page, pitch) {
+  await tryFill(page, ['input[name="name"]', 'input[placeholder*="Full name" i]'], F.fullName);
+  await tryFill(page, ['input[name="email"]', 'input[type="email"]'], F.email);
+  await tryFill(page, ['input[name="phone_number"]', 'input[name="phone"]', 'input[type="tel"]'], F.phone);
+  await tryFill(page, ['input[name="linkedin"]', 'input[placeholder*="LinkedIn" i]'], F.linkedin);
+  await tryFill(page, ['input[name="portfolio"]', 'input[placeholder*="Portfolio" i]'], F.portfolio);
+  await tryFill(page, ['textarea[name="summary"]', 'textarea[name="cover_letter"]'], pitch);
+}
+
+async function fillRecruitee(page, pitch) {
+  await tryFill(page, ['input[name="candidate[name]"]', 'input[placeholder*="Name" i]'], F.fullName);
+  await tryFill(page, ['input[name="candidate[email]"]', 'input[type="email"]'], F.email);
+  await tryFill(page, ['input[name="candidate[phone]"]', 'input[type="tel"]'], F.phone);
+  await tryFill(page, ['input[name="candidate[open_question]"]', 'textarea[name*="cover" i]'], pitch);
+}
+
+async function fillTeamtailor(page, pitch) {
+  await tryFill(page, ['input[name="candidate[first_name]"]', 'input[placeholder*="First" i]'], F.firstName);
+  await tryFill(page, ['input[name="candidate[last_name]"]', 'input[placeholder*="Last" i]'], F.lastName);
+  await tryFill(page, ['input[name="candidate[email]"]', 'input[type="email"]'], F.email);
+  await tryFill(page, ['input[name="candidate[phone]"]', 'input[type="tel"]'], F.phone);
+  await tryFill(page, ['textarea[name="candidate[pitch]"]', 'textarea[placeholder*="cover" i]'], pitch);
+}
+
+async function fillJazzHR(page, pitch) {
+  await tryFill(page, ['input[name="first_name"]', '#applicant_first_name'], F.firstName);
+  await tryFill(page, ['input[name="last_name"]', '#applicant_last_name'], F.lastName);
+  await tryFill(page, ['input[name="email"]', '#applicant_email'], F.email);
+  await tryFill(page, ['input[name="phone"]', '#applicant_phone'], F.phone);
+  await tryFill(page, ['input[name="linkedin"]', 'input[placeholder*="LinkedIn" i]'], F.linkedin);
+  await tryFill(page, ['textarea[name="cover_letter"]', '#applicant_cover_letter'], pitch);
+}
+
+async function fillFreshteam(page, pitch) {
+  await tryFill(page, ['input[name="first_name"]', 'input[placeholder*="First name" i]'], F.firstName);
+  await tryFill(page, ['input[name="last_name"]', 'input[placeholder*="Last name" i]'], F.lastName);
+  await tryFill(page, ['input[name="email"]', 'input[type="email"]'], F.email);
+  await tryFill(page, ['input[name="phone"]', 'input[type="tel"]'], F.phone);
+  await tryFill(page, ['textarea[name="cover_letter"]'], pitch);
+}
+
 async function fillGeneric(page, pitch) {
   await tryFill(page, ['input[name*="first_name" i]', 'input[id*="first_name" i]', 'input[placeholder*="First Name" i]'], F.firstName);
   await tryFill(page, ['input[name*="last_name" i]', 'input[id*="last_name" i]', 'input[placeholder*="Last Name" i]'], F.lastName);
@@ -127,12 +201,33 @@ async function fillGeneric(page, pitch) {
   await tryFill(page, ['textarea[name*="cover" i]', 'textarea[placeholder*="cover" i]', 'textarea[name*="message" i]'], pitch);
 }
 
-const STRATEGIES = { greenhouse: fillGreenhouse, lever: fillLever, ashby: fillAshby };
+const STRATEGIES = {
+  greenhouse: fillGreenhouse,
+  lever: fillLever,
+  ashby: fillAshby,
+  workable: fillWorkable,
+  smartrecruiters: fillSmartRecruiters,
+  bamboohr: fillBambooHR,
+  breezy: fillBreezy,
+  recruitee: fillRecruitee,
+  teamtailor: fillTeamtailor,
+  jazzhr: fillJazzHR,
+  freshteam: fillFreshteam
+};
 
 function detectPlatform(url = "") {
-  if (url.includes("greenhouse.io")) return "greenhouse";
-  if (url.includes("lever.co"))      return "lever";
-  if (url.includes("ashbyhq.com"))   return "ashby";
+  const u = url.toLowerCase();
+  if (u.includes("greenhouse.io"))       return "greenhouse";
+  if (u.includes("lever.co"))            return "lever";
+  if (u.includes("ashbyhq.com"))         return "ashby";
+  if (u.includes("workable.com"))        return "workable";
+  if (u.includes("smartrecruiters.com")) return "smartrecruiters";
+  if (u.includes("bamboohr.com"))        return "bamboohr";
+  if (u.includes("breezy.hr"))           return "breezy";
+  if (u.includes("recruitee.com"))       return "recruitee";
+  if (u.includes("teamtailor.com"))      return "teamtailor";
+  if (u.includes("applytojob.com") || u.includes("jazz.co")) return "jazzhr";
+  if (u.includes("freshteam.com"))       return "freshteam";
   return "generic";
 }
 

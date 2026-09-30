@@ -37,10 +37,28 @@ async function runSearchAndQueue() {
   const isFreeOnly = args.includes("--free-only") || process.env.SEARCH_MODE === "free";
   const enableDeepSearch = !isFreeOnly;
 
+  // Initialize shared Playwright browser instance for fast batch operations
+  let playwrightBrowser = null;
+  try {
+    const { chromium } = await import("playwright");
+    playwrightBrowser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+    });
+  } catch (e) {
+    console.warn("⚠️ Playwright launch warning (continuing without browser proofreading):", e.message);
+  }
+
+  // 🧹 STAGE 0: Automatic Queue Health Check & Pruning
+  // Inspects all existing Queued jobs and removes any listing that is closed, expired, or not accepting applications
+  const { pruneExpiredQueuedJobs } = await import("./prune-queue.mjs");
+  const pruneReport = await pruneExpiredQueuedJobs(db, DEFAULT_USER_ID, playwrightBrowser);
+
   const jobs = await discoverLiveJobs({ enableDeepSearch });
 
   if (jobs.length === 0) {
     console.log("No new jobs found matching your criteria.");
+    if (playwrightBrowser) await playwrightBrowser.close();
     return;
   }
 
@@ -73,18 +91,6 @@ async function runSearchAndQueue() {
   let queuedCount = 0;
   const newlyQueued = [];
   const today = new Date().toISOString().split("T")[0];
-
-  // Initialize shared Playwright browser instance for fast batch proofreading
-  let playwrightBrowser = null;
-  try {
-    const { chromium } = await import("playwright");
-    playwrightBrowser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-    });
-  } catch (e) {
-    console.warn("⚠️ Playwright launch warning (continuing without browser proofreading):", e.message);
-  }
 
   const { proofreadJobWithPlaywright, extractJobRequirements } = await import("./verifier.mjs");
 

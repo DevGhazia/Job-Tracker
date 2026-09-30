@@ -242,14 +242,27 @@ export function detectAutoApplyEligibility(jobUrl = "", finalUrl = "", html = ""
   }
 
   // 2. Open-form ATS platforms (no login needed for external applicants)
-  if (url.includes("boards.greenhouse.io") || url.includes("job-boards.greenhouse.io") || url.includes("greenhouse.io/jobs/")) {
-    return { mode: "open_form", platform: "Greenhouse", applyUrl: finalUrl || jobUrl };
-  }
-  if (url.includes("jobs.lever.co") || url.includes("lever.co/")) {
-    return { mode: "open_form", platform: "Lever", applyUrl: finalUrl || jobUrl };
-  }
-  if (url.includes("jobs.ashbyhq.com") || url.includes("ashbyhq.com/")) {
-    return { mode: "open_form", platform: "Ashby", applyUrl: finalUrl || jobUrl };
+  const openAtsList = [
+    { pattern: "greenhouse.io", name: "Greenhouse" },
+    { pattern: "lever.co", name: "Lever" },
+    { pattern: "ashbyhq.com", name: "Ashby" },
+    { pattern: "workable.com", name: "Workable" },
+    { pattern: "smartrecruiters.com", name: "SmartRecruiters" },
+    { pattern: "bamboohr.com", name: "BambooHR" },
+    { pattern: "breezy.hr", name: "Breezy HR" },
+    { pattern: "recruitee.com", name: "Recruitee" },
+    { pattern: "teamtailor.com", name: "Teamtailor" },
+    { pattern: "applytojob.com", name: "JazzHR" },
+    { pattern: "jazz.co", name: "JazzHR" },
+    { pattern: "freshteam.com", name: "Freshteam" },
+    { pattern: "pinpointhq.com", name: "Pinpoint" },
+    { pattern: "ats.rippling.com", name: "Rippling" }
+  ];
+
+  for (const ats of openAtsList) {
+    if (url.includes(ats.pattern)) {
+      return { mode: "open_form", platform: ats.name, applyUrl: finalUrl || jobUrl };
+    }
   }
 
   // 3. Known login-required portals
@@ -583,6 +596,121 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
       isSuitable: true,
       ...fallbackReqs
     };
+  } finally {
+    if (shouldClose && browser) {
+      await browser.close();
+    }
+  }
+}
+
+
+/**
+ * Fast Playwright viability checker for queued jobs.
+ * Determines if a posting is still live and actively accepting applications.
+ * Returns { isViable: boolean, reason?: string }
+ *
+ * @param {string} jobUrl
+ * @param {object} [existingBrowser]
+ * @returns {Promise<{ isViable: boolean, reason?: string }>}
+ */
+export async function checkJobViability(jobUrl, existingBrowser = null) {
+  if (!jobUrl || typeof jobUrl !== "string" || !jobUrl.startsWith("http")) {
+    return { isViable: true, reason: "No URL provided" };
+  }
+
+  let browser = existingBrowser;
+  let shouldClose = false;
+
+  try {
+    if (!browser) {
+      const { chromium } = await import("playwright");
+      browser = await chromium.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+      });
+      shouldClose = true;
+    }
+
+    const context = await browser.newContext({
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      viewport: { width: 1280, height: 800 }
+    });
+
+    const page = await context.newPage();
+
+    // Abort media/images/fonts for fast check (< 1.5s)
+    await page.route("**/*", (route) => {
+      const type = route.request().resourceType();
+      if (["image", "media", "font"].includes(type)) {
+        return route.abort();
+      }
+      return route.continue();
+    });
+
+    const response = await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 12000 });
+    const status = response ? response.status() : 200;
+
+    if (status === 404 || status === 410) {
+      await context.close();
+      return { isViable: false, reason: `HTTP status ${status} (Page Not Found)` };
+    }
+
+    const bodyText = await page.innerText("body");
+    const html = await page.content();
+    const combined = (bodyText + " " + html).toLowerCase();
+
+    // 1. Comprehensive indicators for closed / expired jobs
+    const closedIndicators = [
+      "no longer accepting applications",
+      "job is closed",
+      "job has expired",
+      "this job is no longer available",
+      "position has been filled",
+      "this opening has been archived",
+      "this job is inactive",
+      "application is closed",
+      "applications are closed",
+      "no longer accepting applicants",
+      "this role is no longer accepting",
+      "this listing is no longer active",
+      "this position is closed",
+      "we are no longer accepting",
+      "applications for this role have closed",
+      "job has been closed",
+      "posting has expired",
+      "the job you are trying to access has been filled",
+      "the job you are looking for does not exist",
+      "we're sorry, but this job has been closed",
+      "this vacancy is closed"
+    ];
+
+    for (const ind of closedIndicators) {
+      if (combined.includes(ind)) {
+        await context.close();
+        return { isViable: false, reason: `Listing closed or expired ('${ind}')` };
+      }
+    }
+
+    // 2. LinkedIn specific checks
+    const urlLower = jobUrl.toLowerCase();
+    if (urlLower.includes("linkedin.com")) {
+      const applyBtnCount = await page.locator("button:has-text('Apply'), a:has-text('Apply'), button.apply-button, a.apply-button, [aria-label*='Apply']").count();
+      const isStale = /\b(?:[3-9]|\d{2,})\s*days?\s*ago\b/i.test(bodyText) ||
+                      /\b\d+\s*(?:weeks?|months?|years?)\s*ago\b/i.test(bodyText);
+
+      if (applyBtnCount === 0 && (isStale || combined.includes("applicants"))) {
+        await context.close();
+        return { isViable: false, reason: "LinkedIn listing has no Apply button (closed or applicant limit reached)" };
+      }
+    }
+
+    await context.close();
+    return { isViable: true };
+  } catch (err) {
+    if (err.message && (err.message.includes("net::ERR_NAME_NOT_RESOLVED") || err.message.includes("404"))) {
+      return { isViable: false, reason: `Page unreachable (${err.message})` };
+    }
+    return { isViable: true, reason: `Check error: ${err.message}` };
   } finally {
     if (shouldClose && browser) {
       await browser.close();
