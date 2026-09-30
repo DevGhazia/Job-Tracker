@@ -38,13 +38,13 @@ const TARGET_TECH_KEYWORDS = [
 // TITLE EXCLUSIONS: Seniority, High YOE, purely non-frontend titles
 const TITLE_EXCLUSIONS = [
   "senior", "sr.", "sr ", "staff", "principal", "lead", "manager", "director", "architect",
-  "sde 2", "sde-2", "sde 3", "sde-3", "sde ii", "sde iii", "team lead", "head of",
+  "sde 2", "sde-2", "sde 3", "sde-3", "sde ii", "sde iii", "sde-ii", "sde-iii", "team lead", "head of",
   "3+", "4+", "5+", "6+", "7+", "8+", "3-5", "4-6", "5-7", "3 to 5", "4 to 6",
   "backend", "back-end", "back end", "python developer", "java developer", "golang", "go developer",
   "django developer", "flask developer", "spring boot", "solidity", "blockchain", "smart contract", "web3",
   "flutter", "react native", "react-native", "android", "ios", "mobile developer", "mobile engineer",
   "devops", "cloud engineer", "qa engineer", "qa automation", "test engineer", "data engineer", "data scientist", "machine learning",
-  "stipend", "unpaid"
+  "stipend", "unpaid", "avp", "vp", "vice president"
 ];
 
 import FirecrawlApp from "@mendable/firecrawl-js";
@@ -191,6 +191,10 @@ function isValidTitle(title = "") {
   for (const ex of TITLE_EXCLUSIONS) {
     if (t.includes(ex)) return false;
   }
+  // Reject level II/III/IV or 2/3/4/5 suffixes in engineer/developer titles
+  if (/(?:engineer|developer|sde|swe|member of technical staff|mts)\s*[-–—:]?\s*(?:ii|iii|iv|v|2|3|4|5|6)\b/i.test(t)) {
+    return false;
+  }
   return TARGET_TECH_KEYWORDS.some(kw => t.includes(kw));
 }
 
@@ -334,143 +338,157 @@ export async function verifyLiveJobPage(url, portalName = "") {
   }
 }
 
-// Live LinkedIn Search - Card by card isolation, posted in last 24h / 1 day (f_TPR=r86400), deep JD verification with fast fallback
+// Live LinkedIn Search - High Coverage (8+ Query Variations, 2-page pagination, posted <= 24h, deep JD verification)
 export async function fetchLinkedInJobs() {
   const queries = [
     { q: "frontend developer", loc: "India" },
+    { q: "frontend engineer", loc: "India" },
     { q: "react developer", loc: "India" },
-    { q: "ui developer", loc: "India" }
+    { q: "react engineer", loc: "India" },
+    { q: "ui developer", loc: "India" },
+    { q: "ui engineer", loc: "India" },
+    { q: "sde 1 frontend", loc: "India" },
+    { q: "software engineer frontend", loc: "India" },
+    { q: "frontend developer", loc: "Remote" },
+    { q: "react developer", loc: "Remote" }
   ];
   const acceptedJobs = [];
   const seenUrls = new Set();
 
   for (const { q, loc } of queries) {
-    try {
-      // f_TPR=r86400 ensures posted <= 24 hours / 1 day ago, f_E=1,2 filters for entry/associate level
-      const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r86400&f_E=1%2C2`;
-      const res = await fetch(searchUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        },
-        signal: AbortSignal.timeout(8000)
-      });
+    // Paginate page 1 (start=0) and page 2 (start=25) for maximum discovery
+    const pageOffsets = [0, 25];
 
-      if (!res.ok) continue;
-      const html = await res.text();
-      const rawCards = html.split("<li");
+    for (const start of pageOffsets) {
+      try {
+        // f_TPR=r86400 ensures posted <= 24 hours / 1 day ago.
+        // NOTE: We omit restrictive f_E filter so we do not miss unclassified/misclassified 0-2 YOE postings.
+        const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r86400&start=${start}`;
+        const res = await fetch(searchUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+          },
+          signal: AbortSignal.timeout(8000)
+        });
 
-      for (let i = 1; i < rawCards.length; i++) {
-        const card = rawCards[i];
-        const titleMatch = card.match(/<h3 class="base-search-card__title">([\s\S]*?)<\/h3>/);
-        const compMatch = card.match(/<h4 class="base-search-card__subtitle">([\s\S]*?)<\/h4>/);
-        const locMatch = card.match(/<span class="job-search-card__location">([\s\S]*?)<\/span>/);
-        const linkMatch = card.match(/<a class="base-card__full-link[^"]*" href="([^"]+)"/);
-        const logoMatch = card.match(/<img class="artdeco-entity-image[^"]*" [^>]*data-delayed-url="([^"]+)"/);
+        if (!res.ok) continue;
+        const html = await res.text();
+        const rawCards = html.split("<li");
+        if (rawCards.length <= 1) continue; // No more jobs for this offset
 
-        if (!titleMatch || !compMatch || !linkMatch) continue;
+        for (let i = 1; i < rawCards.length; i++) {
+          const card = rawCards[i];
+          const titleMatch = card.match(/<h3 class="base-search-card__title">([\s\S]*?)<\/h3>/);
+          const compMatch = card.match(/<h4 class="base-search-card__subtitle">([\s\S]*?)<\/h4>/);
+          const locMatch = card.match(/<span class="job-search-card__location">([\s\S]*?)<\/span>/);
+          const linkMatch = card.match(/<a class="base-card__full-link[^"]*" href="([^"]+)"/);
+          const logoMatch = card.match(/<img class="artdeco-entity-image[^"]*" [^>]*data-delayed-url="([^"]+)"/);
 
-        const title = titleMatch[1].trim();
-        const company = compMatch[1].replace(/<[^>]+>/g, "").trim();
-        const location = locMatch ? locMatch[1].trim() : "India";
-        const jobUrl = linkMatch[1].split("?")[0];
-        const logo = logoMatch ? logoMatch[1].replace(/&amp;/g, "&") : null;
+          if (!titleMatch || !compMatch || !linkMatch) continue;
 
-        if (seenUrls.has(jobUrl)) continue;
-        if (!isValidTitle(title)) continue;
+          const title = titleMatch[1].trim();
+          const company = compMatch[1].replace(/<[^>]+>/g, "").trim();
+          const location = locMatch ? locMatch[1].trim() : (loc === "Remote" ? "Remote" : "India");
+          const jobUrl = linkMatch[1].split("?")[0];
+          const logo = logoMatch ? logoMatch[1].replace(/&amp;/g, "&") : null;
 
-        // 1. Fetch direct job description for full-text, recency and closed validation
-        let jobDesc = "";
-        let isClosed = false;
-        let postedTimeAgo = "";
-        let isFallback = false;
+          if (seenUrls.has(jobUrl)) continue;
+          if (!isValidTitle(title)) continue;
 
-        const jobIdMatch = jobUrl.match(/(\d+)(?:[^\d]|$)/);
-        if (jobIdMatch) {
-          try {
-            const detailRes = await fetch(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobIdMatch[1]}`, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-              },
-              signal: AbortSignal.timeout(5000)
-            });
-            if (detailRes.ok) {
-              const detailHtml = await detailRes.text();
-              const descMatch = detailHtml.match(/<div class="show-more-less-html__markup[^"]*">([\s\S]*?)<\/div>/);
-              if (descMatch) {
-                jobDesc = descMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          // 1. Fetch direct job description for full-text, recency and closed validation
+          let jobDesc = "";
+          let isClosed = false;
+          let postedTimeAgo = "";
+          let isFallback = false;
+
+          const jobIdMatch = jobUrl.match(/(\d+)(?:[^\d]|$)/);
+          if (jobIdMatch) {
+            try {
+              const detailRes = await fetch(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobIdMatch[1]}`, {
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+                },
+                signal: AbortSignal.timeout(5000)
+              });
+              if (detailRes.ok) {
+                const detailHtml = await detailRes.text();
+                const descMatch = detailHtml.match(/<div class="show-more-less-html__markup[^"]*">([\s\S]*?)<\/div>/);
+                if (descMatch) {
+                  jobDesc = descMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+                }
+                const timeMatch = detailHtml.match(/class="posted-time-ago__text[^"]*">([\s\S]*?)<\/span>/i);
+                if (timeMatch) {
+                  postedTimeAgo = timeMatch[1].trim().toLowerCase();
+                }
+                if (detailHtml.includes("no longer accepting applications") || detailHtml.includes("closed-job") || detailHtml.includes("is closed")) {
+                  isClosed = true;
+                }
+              } else {
+                // Rate limited or anti-bot on cloud runner -> activate Fast Fallback
+                isFallback = true;
               }
-              const timeMatch = detailHtml.match(/class="posted-time-ago__text[^"]*">([\s\S]*?)<\/span>/i);
-              if (timeMatch) {
-                postedTimeAgo = timeMatch[1].trim().toLowerCase();
-              }
-              if (detailHtml.includes("no longer accepting applications") || detailHtml.includes("closed-job") || detailHtml.includes("is closed")) {
-                isClosed = true;
-              }
-            } else {
-              // Rate limited or anti-bot on cloud runner -> activate Fast Fallback
+            } catch {
               isFallback = true;
             }
-          } catch {
+          } else {
             isFallback = true;
           }
-        } else {
-          isFallback = true;
-        }
 
-        if (isClosed) {
-          console.log(`⏩ Skipping closed LinkedIn job: ${title} at ${company}`);
-          continue;
-        }
-
-        // Strict recency check: skip if older than 1 day
-        if (postedTimeAgo) {
-          const staleCheck = [
-            "week", "month", "year", 
-            "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", 
-            "11 day", "12 day", "13 day", "14 day", "15 day", "20 day", "30 day",
-            "2d", "3d", "4d", "5d", "1w", "2w", "1mo"
-          ];
-          if (staleCheck.some(s => postedTimeAgo.includes(s))) {
-            console.log(`⏩ Skipping outdated LinkedIn job (${postedTimeAgo}): ${title} at ${company}`);
+          if (isClosed) {
+            console.log(`⏩ Skipping closed LinkedIn job: ${title} at ${company}`);
             continue;
           }
-        }
 
-        // Check if backend is strictly mandatory in the description
-        if (jobDesc && isStrictlyBackendOnly(jobDesc)) {
-          console.log(`⏩ Skipping backend-mandatory role: ${title} at ${company}`);
-          continue;
-        }
+          // Strict recency check: skip if older than 1 day
+          if (postedTimeAgo) {
+            const staleCheck = [
+              "week", "month", "year", 
+              "2 day", "3 day", "4 day", "5 day", "6 day", "7 day", "8 day", "9 day", "10 day", 
+              "11 day", "12 day", "13 day", "14 day", "15 day", "20 day", "30 day",
+              "2d", "3d", "4d", "5d", "1w", "2w", "1mo"
+            ];
+            if (staleCheck.some(s => postedTimeAgo.includes(s))) {
+              console.log(`⏩ Skipping outdated LinkedIn job (${postedTimeAgo}): ${title} at ${company}`);
+              continue;
+            }
+          }
 
-        let assignedExp = 1;
-        if (jobDesc) {
-          const expCheck = extractExperience(jobDesc);
-          if (!expCheck.valid) {
-            console.log(`⏩ Skipping high experience role: ${title} at ${company}`);
+          // Check if backend is strictly mandatory in the description
+          if (jobDesc && isStrictlyBackendOnly(jobDesc)) {
+            console.log(`⏩ Skipping backend-mandatory role: ${title} at ${company}`);
             continue;
           }
-          assignedExp = expCheck.exp;
+
+          let assignedExp = 1;
+          if (jobDesc) {
+            const expCheck = extractExperience(jobDesc);
+            if (!expCheck.valid) {
+              console.log(`⏩ Skipping high experience role: ${title} at ${company}`);
+              continue;
+            }
+            assignedExp = expCheck.exp;
+          }
+
+          const clearoutLogo = await fetchClearoutLogo(company);
+          const finalLogo = clearoutLogo || logo || null;
+
+          seenUrls.add(jobUrl);
+          acceptedJobs.push({
+            company,
+            tier: "growth",
+            role: title,
+            location,
+            jobUrl,
+            logo: finalLogo,
+            experience: assignedExp,
+            portalName: "LinkedIn",
+            source: isFallback ? "LinkedIn Jobs (Fast Fallback)" : "LinkedIn Jobs",
+            isFallback
+          });
         }
-
-        const clearoutLogo = await fetchClearoutLogo(company);
-        const finalLogo = clearoutLogo || logo || null;
-
-        seenUrls.add(jobUrl);
-        acceptedJobs.push({
-          company,
-          tier: "growth",
-          role: title,
-          location,
-          jobUrl,
-          logo: finalLogo,
-          experience: assignedExp,
-          portalName: "LinkedIn",
-          source: isFallback ? "LinkedIn Jobs (Fast Fallback)" : "LinkedIn Jobs",
-          isFallback
-        });
+      } catch {
+        // Continue next query / offset
       }
-    } catch {
-      // Continue next query
     }
   }
 
