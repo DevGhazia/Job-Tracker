@@ -86,7 +86,7 @@ async function runSearchAndQueue() {
     console.warn("⚠️ Playwright launch warning (continuing without browser proofreading):", e.message);
   }
 
-  const { proofreadJobWithPlaywright } = await import("./verifier.mjs");
+  const { proofreadJobWithPlaywright, extractJobRequirements } = await import("./verifier.mjs");
 
   for (const job of jobs) {
     const cleanCompany = (job.company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -99,8 +99,16 @@ async function runSearchAndQueue() {
       continue;
     }
 
-    // 🔬 STAGE 2: Playwright Source Page Proofreading (Recency & Experience)
+    // 🔬 STAGE 2: Playwright Source Page Proofreading (Recency & Structured Extraction)
     let verifiedExp = job.experience || "0 - 2 YOE";
+    let mandatoryRequirements = job.mandatoryRequirements || [];
+    let niceToHave = job.niceToHave || [];
+    let mandatoryBullets = job.mandatoryBullets || [];
+    let niceToHaveBullets = job.niceToHaveBullets || [];
+    let salary = job.salary || null;
+    let directApplyUrl = job.directApplyUrl || null;
+    let overview = job.overview || "";
+
     if (playwrightBrowser && job.jobUrl) {
       const proof = await proofreadJobWithPlaywright(job.jobUrl, job.role, playwrightBrowser);
       if (!proof.isSuitable) {
@@ -108,7 +116,24 @@ async function runSearchAndQueue() {
         continue; // Drop jobs whose source page demands senior/3+ YOE or is older than 1 day!
       }
       verifiedExp = proof.verifiedExperience || verifiedExp;
+      mandatoryRequirements = proof.mandatoryRequirements?.length ? proof.mandatoryRequirements : mandatoryRequirements;
+      niceToHave = proof.niceToHave?.length ? proof.niceToHave : niceToHave;
+      mandatoryBullets = proof.mandatoryBullets?.length ? proof.mandatoryBullets : mandatoryBullets;
+      niceToHaveBullets = proof.niceToHaveBullets?.length ? proof.niceToHaveBullets : niceToHaveBullets;
+      salary = proof.salary || salary;
+      directApplyUrl = proof.directApplyUrl || directApplyUrl;
+      overview = proof.overview || overview;
       console.log(`✅ [Playwright Verified Fresh 0-2 YOE] ${job.role} at ${job.company} (${verifiedExp})`);
+    } else {
+      // Fallback extraction from snippet/description
+      const fallbackReqs = extractJobRequirements(job.description || job.snippet || "", "", job.jobUrl, job.role);
+      mandatoryRequirements = fallbackReqs.mandatoryRequirements;
+      niceToHave = fallbackReqs.niceToHave;
+      mandatoryBullets = fallbackReqs.mandatoryBullets;
+      niceToHaveBullets = fallbackReqs.niceToHaveBullets;
+      salary = fallbackReqs.salary;
+      directApplyUrl = fallbackReqs.directApplyUrl;
+      overview = fallbackReqs.overview;
     }
 
     const tailoredPitch = generateTailoredPitch(job, profile);
@@ -119,11 +144,18 @@ async function runSearchAndQueue() {
       location: job.location,
       experience: verifiedExp,
       jobUrl: job.jobUrl,
+      directApplyUrl: directApplyUrl || null,
       portalName: job.portalName,
       notes: tailoredPitch,
       status: "Queued",
       date: today,
-      didInterview: false
+      didInterview: false,
+      mandatoryRequirements,
+      niceToHave,
+      mandatoryBullets,
+      niceToHaveBullets,
+      salary,
+      overview
     };
 
     const doc = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications").add(newApp);
