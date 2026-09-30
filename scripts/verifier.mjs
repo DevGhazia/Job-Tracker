@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 
 /**
- * Extracts experience requirements from raw text
+ * Extracts experience requirements from raw text with strict range-aware matching.
  * @param {string} text 
  * @param {string} [jobTitle]
  * @returns {{ minYoe: number, maxYoe: number, raw: string, isSenior: boolean, isSuitable: boolean }}
@@ -10,56 +10,90 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
   const clean = text.replace(/\s+/g, " ");
 
   // Check if the role TITLE itself is senior/staff/lead
-  const isSeniorTitle = /\b(senior|sr\.|staff|principal|lead|architect|director|manager)\b/i.test(jobTitle);
-
-  // Match patterns like: "2-4 years", "1 to 3 yrs", "3+ years of experience", "minimum 2 years", "0-2 YOE", "2+ years"
-  const patterns = [
-    /(?:require(?:s|d)?|minimum|at least|with|have)\s*([0-9]+)\s*(?:-|to|\+)?\s*([0-9]*)\s*(?:years?|yrs?|yoe)\s*(?:of)?\s*(?:relevant|hands-on|industry|software|frontend|work)?\s*experience/i,
-    /experience\s*:\s*([0-9]+)\s*(?:-|to|\+)?\s*([0-9]*)\s*(?:years?|yrs?|yoe)?/i,
-    /([0-9]+)\s*(?:-|to)\s*([0-9]+)\s*(?:years?|yrs?|yoe)\s*(?:of)?\s*(?:experience)?/i,
-    /([0-9]+)\s*\+\s*(?:years?|yrs?|yoe)\s*(?:of)?\s*(?:experience)?/i
-  ];
+  const isSeniorTitle = /\b(senior|sr\.|sr |staff|principal|lead|architect|director|manager|avp|vp)\b/i.test(jobTitle);
 
   let minYoe = null;
   let maxYoe = null;
-  let rawMatch = "";
 
-  for (const regex of patterns) {
+  // ─── PHASE 1: Try to find a RANGE pattern first (most specific wins) ───────
+  // Handles: "2-5 years", "1 to 3 years", "2 to 5 yrs", "0-2 years of experience"
+  const rangePatterns = [
+    // "X-Y years/yrs/yoe [of experience]"
+    /\b([0-9]+)\s*[-–]\s*([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
+    // "X to Y years/yrs/yoe [of experience]"
+    /\b([0-9]+)\s+to\s+([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
+    // "X - Y years" with leading context (minimum/at least/require)
+    /(?:minimum|min|at least|require(?:s|d)?)\s+([0-9]+)\s*[-–to]+\s*([0-9]+)\s*(?:years?|yrs?|yoe)/i,
+  ];
+
+  for (const regex of rangePatterns) {
     const match = clean.match(regex);
     if (match) {
-      rawMatch = match[0].trim();
       minYoe = parseInt(match[1], 10);
-      maxYoe = match[2] ? parseInt(match[2], 10) : minYoe;
+      maxYoe = parseInt(match[2], 10);
+      // Sanity check: don't accept reversed or nonsensical ranges
+      if (minYoe > maxYoe) [minYoe, maxYoe] = [maxYoe, minYoe];
       break;
     }
   }
 
-  // If no explicit number was found, check for fresher / entry level keywords
+  // ─── PHASE 2: If no range found, look for a single-number or X+ pattern ───
   if (minYoe === null) {
-    if (/\b(fresher|entry level|graduate|intern|0-1 year|0-2 year|early career)\b/i.test(clean)) {
-      minYoe = 0;
-      maxYoe = 2;
-      rawMatch = "0-2 YOE (Entry Level)";
+    const singlePatterns = [
+      // "X+ years" / "X+ yrs" — treat as open-ended minimum
+      /\b([0-9]+)\s*\+\s*(?:years?|yrs?|yoe)\b/i,
+      // "minimum/at least/require X years"
+      /(?:minimum|min\.?|at least|require(?:s|d)?)\s+([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
+      // "X years of experience" with no range
+      /\b([0-9]+)\s*(?:years?|yrs?|yoe)\s*of\s*(?:relevant|professional|hands-on|industry|work)?\s*experience/i,
+      // "experience: X years"
+      /experience\s*:\s*([0-9]+)\s*(?:years?|yrs?|yoe)?/i,
+    ];
+
+    for (const regex of singlePatterns) {
+      const match = clean.match(regex);
+      if (match) {
+        minYoe = parseInt(match[1], 10);
+        // For "X+" or standalone, set maxYoe conservatively high so strict check catches it
+        maxYoe = minYoe >= 2 ? minYoe + 2 : minYoe;
+        break;
+      }
     }
   }
 
+  // ─── PHASE 3: Fallback to entry-level keywords ────────────────────────────
+  if (minYoe === null) {
+    if (/\b(fresher|entry[- ]level|fresh graduate|0[- ]1 year|0[- ]2 year|early career|recent graduate)\b/i.test(clean)) {
+      minYoe = 0;
+      maxYoe = 1;
+    }
+  }
+
+  // ─── Build display tag ────────────────────────────────────────────────────
   let cleanTag = "0-2 yrs";
-  if (minYoe !== null) {
-    if (minYoe === maxYoe || !maxYoe) {
+  if (minYoe !== null && maxYoe !== null) {
+    if (minYoe === maxYoe) {
       cleanTag = `${minYoe} yrs`;
     } else {
       cleanTag = `${minYoe}-${maxYoe} yrs`;
     }
+  } else if (minYoe !== null) {
+    cleanTag = `${minYoe} yrs`;
   }
 
-  // Strict suitability check: Candidate has 2 YOE from IIT Roorkee.
-  // Suitable if:
-  // 1. Min YOE is <= 2 (e.g. 0-2, 1-3, 2-4, 1-2, 2 yrs)
-  // 2. Job title is not Senior/Lead/Staff
-  // Unsuitable if:
-  // 1. Min YOE >= 3 (e.g. 3-5, 3+, 4+, 5+, 6+)
-  // 2. Senior job title
-  const isSenior = isSeniorTitle || (minYoe !== null && minYoe >= 3);
+  // ─── SUITABILITY DECISION (strict 0-2 YOE profile) ───────────────────────
+  // A role is SUITABLE only if:
+  //   1. Title is not Senior/Lead/Staff
+  //   2. minYoe is <= 2 (role doesn't start above candidate's experience)
+  //   3. maxYoe is <= 3  (role's upper band isn't deep into mid-level territory)
+  //      → "2-5 yrs" is a MID-LEVEL role even though min is 2 → REJECT
+  //      → "1-3 yrs" is fine (entry/junior stretch)
+  //      → "0-2 yrs", "1-2 yrs", "2 yrs", "0-1 yr" → fine
+  // If no YOE info found at all, optimistically allow (Playwright will have full page text)
+  const isSenior = isSeniorTitle
+    || (minYoe !== null && minYoe >= 3)
+    || (maxYoe !== null && maxYoe >= 4);
+
   const isSuitable = !isSenior && (minYoe === null || minYoe <= 2);
 
   return {
@@ -70,6 +104,7 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     isSuitable
   };
 }
+
 
 /**
  * Checks live page body text, HTML, and URL for posting recency.
