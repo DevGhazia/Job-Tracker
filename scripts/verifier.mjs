@@ -18,12 +18,12 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
   // ─── PHASE 1: Try to find a RANGE pattern first (most specific wins) ───────
   // Handles: "2-5 years", "1 to 3 years", "2 to 5 yrs", "0-2 years of experience"
   const rangePatterns = [
-    // "X-Y years/yrs/yoe [of experience]"
+    // "X-Y years/yrs/yoe" — most common form
     /\b([0-9]+)\s*[-–]\s*([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
-    // "X to Y years/yrs/yoe [of experience]"
+    // "X to Y years/yrs/yoe"
     /\b([0-9]+)\s+to\s+([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
-    // "X - Y years" with leading context (minimum/at least/require)
-    /(?:minimum|min|at least|require(?:s|d)?)\s+([0-9]+)\s*[-–to]+\s*([0-9]+)\s*(?:years?|yrs?|yoe)/i,
+    // "minimum/at least/require X years to Y years" — e.g. "Minimum 2 years to 5 years"
+    /(?:minimum|min|at least|require(?:s|d)?)\s+([0-9]+)\s*(?:years?|yrs?|yoe)?\s*(?:-|–|to)\s*([0-9]+)\s*(?:years?|yrs?|yoe)/i,
   ];
 
   for (const regex of rangePatterns) {
@@ -81,18 +81,12 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     cleanTag = `${minYoe} yrs`;
   }
 
-  // ─── SUITABILITY DECISION (strict 0-2 YOE profile) ───────────────────────
-  // A role is SUITABLE only if:
-  //   1. Title is not Senior/Lead/Staff
-  //   2. minYoe is <= 2 (role doesn't start above candidate's experience)
-  //   3. maxYoe is <= 3  (role's upper band isn't deep into mid-level territory)
-  //      → "2-5 yrs" is a MID-LEVEL role even though min is 2 → REJECT
-  //      → "1-3 yrs" is fine (entry/junior stretch)
-  //      → "0-2 yrs", "1-2 yrs", "2 yrs", "0-1 yr" → fine
-  // If no YOE info found at all, optimistically allow (Playwright will have full page text)
-  const isSenior = isSeniorTitle
-    || (minYoe !== null && minYoe >= 3)
-    || (maxYoe !== null && maxYoe >= 4);
+  // ─── SUITABILITY DECISION ─────────────────────────────────────────────────
+  // Reject only if the role STARTS above the candidate's 2 YOE profile.
+  // e.g. minYoe=3 → "3-5 yrs" → reject (candidate can't even meet the minimum)
+  // e.g. minYoe=2 → "2-5 yrs" → ALLOW and display "2-5 yrs" on the card
+  //      The candidate (2 YOE) is eligible to apply — we just show the real range.
+  const isSenior = isSeniorTitle || (minYoe !== null && minYoe >= 3);
 
   const isSuitable = !isSenior && (minYoe === null || minYoe <= 2);
 
