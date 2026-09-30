@@ -81,21 +81,8 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
       console.log(`  ❌ DEAD LISTING DETECTED: ${viability.reason}`);
       console.log(`  🗑️ Removing doc ${doc.id} from Action Queue...`);
 
-      // 1. Move to dismissed_jobs so it is permanently ignored by future searches
-      await customDb
-        .collection("users")
-        .doc(userId)
-        .collection("dismissed_jobs")
-        .doc(doc.id)
-        .set({
-          jobUrl: jobUrl || "",
-          company,
-          role,
-          dismissedAt: new Date().toISOString(),
-          reason: viability.reason || "Posting expired or closed"
-        });
-
-      // 2. Delete from applications collection
+      // Delete from applications collection so it leaves the Action Queue
+      // (We do NOT add to dismissed_jobs so that if the company posts again in the future, it is discovered!)
       await customDb
         .collection("users")
         .doc(userId)
@@ -104,7 +91,7 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
         .delete();
 
       prunedJobs.push({ id: doc.id, company, role, reason: viability.reason });
-      console.log(`  ✅ Removed and blacklisted.`);
+      console.log(`  ✅ Removed from queue (company remains eligible for future postings).`);
     } else {
       console.log(`  🟢 Active and accepting applications.`);
     }
