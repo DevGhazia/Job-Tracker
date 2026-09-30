@@ -108,6 +108,8 @@ async function runSearchAndQueue() {
     let salary = job.salary || null;
     let directApplyUrl = job.directApplyUrl || null;
     let overview = job.overview || "";
+    let autoApplyMode = "unknown";
+    let autoApplyPlatform = "";
 
     if (playwrightBrowser && job.jobUrl) {
       const proof = await proofreadJobWithPlaywright(job.jobUrl, job.role, playwrightBrowser);
@@ -123,7 +125,10 @@ async function runSearchAndQueue() {
       salary = proof.salary || salary;
       directApplyUrl = proof.directApplyUrl || directApplyUrl;
       overview = proof.overview || overview;
-      console.log(`✅ [Playwright Verified Fresh 0-2 YOE] ${job.role} at ${job.company} (${verifiedExp})`);
+      autoApplyMode = proof.autoApplyMode || autoApplyMode;
+      autoApplyPlatform = proof.autoApplyPlatform || autoApplyPlatform;
+      if (!directApplyUrl && proof.autoApplyUrl) directApplyUrl = proof.autoApplyUrl;
+      console.log(`✅ [Playwright Verified Fresh 0-2 YOE] ${job.role} at ${job.company} (${verifiedExp}) [AutoApply: ${autoApplyMode}]`);
     } else {
       // Fallback extraction from snippet/description
       const fallbackReqs = extractJobRequirements(job.description || job.snippet || "", "", job.jobUrl, job.role);
@@ -155,7 +160,9 @@ async function runSearchAndQueue() {
       mandatoryBullets,
       niceToHaveBullets,
       salary,
-      overview
+      overview,
+      autoApplyMode,    // "open_form" | "linkedin" | "login_wall" | "unknown"
+      autoApplyPlatform
     };
 
     const doc = await db.collection("users").doc(DEFAULT_USER_ID).collection("applications").add(newApp);

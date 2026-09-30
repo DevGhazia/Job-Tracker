@@ -216,6 +216,86 @@ export function extractDirectApplyUrl(html = "", currentUrl = "") {
   return null;
 }
 
+
+
+/**
+ * Detects whether a job URL / page supports auto-apply.
+ * Returns one of four modes:
+ *   "open_form"  → Greenhouse/Lever/Ashby public form, no login → show Auto Apply button
+ *   "linkedin"   → LinkedIn posting → show "Open on LinkedIn ↗" only (ban risk)
+ *   "login_wall" → Requires account (Naukri, Workday, Indeed) → show "Apply ↗" only
+ *   "unknown"    → Can't determine → show "Apply ↗" only
+ *
+ * @param {string} jobUrl
+ * @param {string} [finalUrl]  - URL after any redirects (Playwright page.url())
+ * @param {string} [html]      - Full page HTML
+ * @param {string} [bodyText]  - Visible body text
+ * @returns {{ mode: string, platform: string, applyUrl: string | null }}
+ */
+export function detectAutoApplyEligibility(jobUrl = "", finalUrl = "", html = "", bodyText = "") {
+  const url = (finalUrl || jobUrl).toLowerCase();
+  const htmlLower = (html || "").toLowerCase();
+
+  // 1. LinkedIn → never auto-apply (bot ban risk)
+  if (url.includes("linkedin.com")) {
+    return { mode: "linkedin", platform: "LinkedIn", applyUrl: jobUrl };
+  }
+
+  // 2. Open-form ATS platforms (no login needed for external applicants)
+  if (url.includes("boards.greenhouse.io") || url.includes("job-boards.greenhouse.io") || url.includes("greenhouse.io/jobs/")) {
+    return { mode: "open_form", platform: "Greenhouse", applyUrl: finalUrl || jobUrl };
+  }
+  if (url.includes("jobs.lever.co") || url.includes("lever.co/")) {
+    return { mode: "open_form", platform: "Lever", applyUrl: finalUrl || jobUrl };
+  }
+  if (url.includes("jobs.ashbyhq.com") || url.includes("ashbyhq.com/")) {
+    return { mode: "open_form", platform: "Ashby", applyUrl: finalUrl || jobUrl };
+  }
+
+  // 3. Known login-required portals
+  const loginWalls = [
+    ["naukri.com", "Naukri"],
+    ["myworkdayjobs.com", "Workday"],
+    ["indeed.com", "Indeed"],
+    ["wellfound.com", "Wellfound"],
+    ["angellist.com", "AngelList"],
+    ["instahyre.com", "Instahyre"],
+    ["cutshort.io", "Cutshort"],
+    ["hirist.tech", "Hirist"],
+    ["foundit.in", "Foundit"],
+    ["internshala.com", "Internshala"],
+  ];
+  for (const [pattern, name] of loginWalls) {
+    if (url.includes(pattern)) {
+      return { mode: "login_wall", platform: name, applyUrl: jobUrl };
+    }
+  }
+
+  // 4. DOM-based login wall detection
+  const hasPasswordField = htmlLower.includes('type="password"') || htmlLower.includes("type='password'");
+  const hasLoginCta = /\b(sign in to apply|log in to apply|create an account to apply|login required|please sign in|apply with linkedin)\b/i.test(bodyText);
+  if (hasPasswordField || hasLoginCta) {
+    return { mode: "login_wall", platform: "Unknown (Login Required)", applyUrl: jobUrl };
+  }
+
+  // 5. DOM-based open form detection
+  const hasOpenForm = (
+    htmlLower.includes('name="first_name"') ||
+    htmlLower.includes('name="last_name"') ||
+    htmlLower.includes('name="email"') ||
+    htmlLower.includes('placeholder="first name"') ||
+    htmlLower.includes('placeholder="email"') ||
+    /submit application|submit your application/i.test(bodyText)
+  ) && !hasPasswordField;
+
+  if (hasOpenForm) {
+    return { mode: "open_form", platform: "External ATS", applyUrl: finalUrl || jobUrl };
+  }
+
+  // 6. Default fallback
+  return { mode: "unknown", platform: "Unknown", applyUrl: jobUrl };
+}
+
 const CORE_FRONTEND_SKILLS = [
   { name: "React.js", regex: /\b(?:react(?:\.js)?|reactjs)\b/i },
   { name: "TypeScript", regex: /\b(?:typescript|ts)\b/i },
@@ -413,6 +493,7 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
 
     console.log(`🔎 [Playwright Proofreader] Inspecting: ${jobUrl}`);
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 9000 });
+    const finalUrl = page.url(); // capture URL after any redirects
 
     // Click "Show more" / "See more" if present (LinkedIn, Greenhouse, Ashby, Lever)
     const showMoreSelectors = [
@@ -436,6 +517,9 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
     // Extract text from the main job description container or body
     const bodyText = await page.innerText("body");
     const html = await page.content();
+
+    // Detect auto-apply eligibility while we still have the page data
+    const autoApply = detectAutoApplyEligibility(jobUrl, finalUrl, html, bodyText);
 
     await context.close();
 
@@ -486,7 +570,10 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
       niceToHaveBullets: reqs.niceToHaveBullets,
       salary: reqs.salary,
       directApplyUrl: reqs.directApplyUrl,
-      overview: reqs.overview
+      overview: reqs.overview,
+      autoApplyMode: autoApply.mode,       // "open_form" | "linkedin" | "login_wall" | "unknown"
+      autoApplyPlatform: autoApply.platform,
+      autoApplyUrl: autoApply.applyUrl
     };
   } catch (err) {
     console.warn(`⚠️ [Playwright Proofreader Warning] Could not inspect ${jobUrl}:`, err.message);

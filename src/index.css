@@ -1124,6 +1124,47 @@ nav{
   background: var(--bg);
 }
 
+/* 🤖 Auto Apply button — green, for open ATS forms (Greenhouse/Lever/Ashby) */
+.queue-auto-apply-btn {
+  height: 1.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font: var(--small);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0 0.65rem;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #065f46;
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.queue-auto-apply-btn:hover {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+  transform: translateY(-1px);
+}
+
+/* LinkedIn button — blue, opens LinkedIn only (no bot) */
+.queue-linkedin-btn {
+  color: #0077b5 !important;
+  background: #f0f9ff !important;
+  border: 1px solid #bae6fd !important;
+}
+
+.queue-linkedin-btn:hover {
+  background: #0077b5 !important;
+  color: #ffffff !important;
+  border-color: #0077b5 !important;
+}
+
 /* ============ EXPANDABLE DRAWER ============ */
 .queue-row-expanded-drawer {
   padding: 0.85rem 1rem;

@@ -133,6 +133,14 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) =>
                     const bonusSkills = getBonusSkills(app);
                     const applyLink = app.directApplyUrl || app.jobUrl;
 
+                    // ── Auto Apply button state ────────────────────────────
+                    // "open_form"  → 🤖 Auto Apply button (Greenhouse/Lever/Ashby)
+                    // "linkedin"   → Open on LinkedIn ↗ (no bot, just redirects)
+                    // "login_wall" → Apply ↗ (requires login, no auto)
+                    // "unknown"    → Apply ↗ (safe fallback)
+                    const autoMode = app.autoApplyMode || "unknown";
+                    const isAutoApplyEligible = autoMode === "open_form";
+
                     return (
                         <div
                             className={`action-queue-row-container ${isExpanded ? "queue-row-expanded" : "queue-row-collapsed"}`}
@@ -191,14 +199,43 @@ const ActionQueue = ({ queueList = [], onMarkApplied, onDelete, onClearAll }) =>
                                             {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                                         </button>
 
-                                        {/* Direct Apply Button */}
-                                        {applyLink && (
+                                        {/* ── Smart Apply Button (3 states) ────────────── */}
+                                        {autoMode === "open_form" && applyLink && (
+                                            // 🤖 Auto Apply — Greenhouse / Lever / Ashby open form
+                                            <a
+                                                href={applyLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="queue-auto-apply-btn"
+                                                title={`Auto-fill your profile on ${app.autoApplyPlatform || "ATS"} — open form, no login needed`}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                🤖 <span>Auto Apply</span>
+                                            </a>
+                                        )}
+
+                                        {autoMode === "linkedin" && applyLink && (
+                                            // LinkedIn — just redirect, no bot
+                                            <a
+                                                href={applyLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="dm-compact-link-btn queue-linkedin-btn"
+                                                title="Open on LinkedIn (Easy Apply or Direct Apply)"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <FiExternalLink /> <span>LinkedIn ↗</span>
+                                            </a>
+                                        )}
+
+                                        {(autoMode === "login_wall" || autoMode === "unknown") && applyLink && (
+                                            // Login required or unknown — plain redirect
                                             <a
                                                 href={applyLink}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="dm-compact-link-btn queue-apply-link-btn"
-                                                title={`Open application for ${app.role} at ${app.company}`}
+                                                title={`Open application page${app.autoApplyPlatform ? ` on ${app.autoApplyPlatform}` : ""}`}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <FiExternalLink /> <span>Apply ↗</span>
