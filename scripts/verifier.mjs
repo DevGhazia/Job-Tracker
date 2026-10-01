@@ -571,6 +571,44 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
       };
     }
 
+    // 2.5. Location & Work Authorization Check (Candidate is targeting India)
+    const lowerBody = bodyText.toLowerCase();
+    const foreignRestrictions = [
+      "must be located in the united states",
+      "must reside in the united states",
+      "must be located in the us",
+      "us work authorization required",
+      "only candidates in the us",
+      "must be legally authorized to work in the united states without sponsorship",
+      "us-based candidates only",
+      "only us or canada",
+      "uk residents only",
+      "must be based in the uk",
+      "eu residents only",
+      "must reside in europe",
+      "australia only",
+      "canada only",
+      "us citizens or green card holders only",
+      "no c2c or visa sponsorship"
+    ];
+
+    for (const restriction of foreignRestrictions) {
+      if (lowerBody.includes(restriction)) {
+        return {
+          verifiedExperience: parsed.raw,
+          isSuitable: false,
+          reason: `Foreign location restriction: "${restriction}"`,
+          mandatoryRequirements: [],
+          niceToHave: [],
+          mandatoryBullets: [],
+          niceToHaveBullets: [],
+          salary: null,
+          directApplyUrl: null,
+          overview: ""
+        };
+      }
+    }
+
     // 3. Extract Structured Requirements, Nice-to-Have, Salary & ATS URLs
     const reqs = extractJobRequirements(bodyText, html, jobUrl, jobTitle);
 

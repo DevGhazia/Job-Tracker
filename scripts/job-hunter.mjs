@@ -16,11 +16,6 @@ const TARGET_ATS_COMPANIES = [
   { company: "Hasura", tier: "startup", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/hasura/jobs" },
   { company: "Swiggy", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/swiggy/jobs" },
   { company: "Urban Company", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/urbancompany/jobs" },
-  { company: "Supabase", tier: "startup", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/supabase/jobs" },
-  { company: "Sentry", tier: "growth", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/sentry/jobs" },
-  { company: "GitLab", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs" },
-  { company: "Figma", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/figma/jobs" },
-  { company: "Stripe", tier: "enterprise", portal: "Greenhouse", url: "https://boards-api.greenhouse.io/v1/boards/stripe/jobs" },
   { company: "Meesho", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/meesho?mode=json" },
   { company: "Groww", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/groww?mode=json" },
   { company: "CleverTap", tier: "growth", portal: "Lever", url: "https://api.lever.co/v0/postings/clevertap?mode=json" },
@@ -95,6 +90,62 @@ export async function extractDetailsWithFirecrawl(jobUrl) {
     // Fallback to direct parsing silently
   }
   return null;
+}
+
+
+/**
+ * Strict India Location Validator.
+ * Rejects any posting that specifies non-India cities, US states, foreign countries, or international remote requiring foreign work auth.
+ * @param {string} loc
+ * @returns {boolean}
+ */
+export function isIndiaLocation(loc = "") {
+  if (!loc) return false;
+  const l = loc.toLowerCase().trim();
+
+  // Explicit non-India locations -> strictly reject
+  const nonIndiaKeywords = [
+    "united states", "usa", "u.s.", "san francisco", "new york", "california", "los angeles",
+    "seattle", "austin", "chicago", "boston", "denver", "atlanta", "dallas", "texas",
+    "united kingdom", "uk", "london", "manchester", "birmingham", "scotland",
+    "canada", "toronto", "vancouver", "montreal", "ottawa", "ontario",
+    "germany", "berlin", "munich", "frankfurt", "hamburg",
+    "france", "paris", "netherlands", "amsterdam", "ireland", "dublin",
+    "australia", "sydney", "melbourne", "brisbane",
+    "singapore", "poland", "warsaw", "krakow", "spain", "madrid", "barcelona",
+    "brazil", "sao paulo", "japan", "tokyo", "switzerland", "zurich", "geneva", "sweden", "stockholm",
+    "israel", "tel aviv", "philippines", "manila", "vietnam", "nigeria", "kenya",
+    "latin america", "latam", "emea", "apac only", "europe", "north america"
+  ];
+
+  for (const nonInd of nonIndiaKeywords) {
+    const re = new RegExp(`\\b${nonInd}\\b`, "i");
+    if (re.test(l)) {
+      return false;
+    }
+  }
+
+  // Positive India matches (cities, states, regions)
+  const indiaKeywords = [
+    "india", "bengaluru", "bangalore", "delhi", "new delhi", "ncr", "gurgaon", "gurugram", "gurgoan", "noida",
+    "hyderabad", "secunderabad", "telangana", "mumbai", "pune", "navi mumbai", "maharashtra",
+    "chennai", "tamil nadu", "kolkata", "west bengal", "ahmedabad", "surat", "vadodara", "gujarat",
+    "jaipur", "rajasthan", "kochi", "cochin", "thiruvananthapuram", "kerala",
+    "indore", "bhopal", "madhya pradesh", "mohali", "chandigarh", "punjab", "haryana",
+    "lucknow", "kanpur", "uttar pradesh", "bhubaneswar", "odisha", "coimbatore", "goa", "karnataka"
+  ];
+
+  for (const ind of indiaKeywords) {
+    const re = new RegExp(`\\b${ind}\\b`, "i");
+    if (re.test(l)) return true;
+  }
+
+  // Pure "Remote" / "Remote / Hybrid" is valid ONLY if explicitly labeled as India or within India searches
+  if (l === "remote" || l === "remote / hybrid" || l === "hybrid" || l === "work from home") {
+    return true;
+  }
+
+  return false;
 }
 
 export function getDynamicSalary(companyTier, profile) {
@@ -349,8 +400,8 @@ export async function fetchLinkedInJobs() {
     { q: "ui engineer", loc: "India" },
     { q: "sde 1 frontend", loc: "India" },
     { q: "software engineer frontend", loc: "India" },
-    { q: "frontend developer", loc: "Remote" },
-    { q: "react developer", loc: "Remote" }
+    { q: "react frontend remote", loc: "India" },
+    { q: "frontend developer remote", loc: "India" }
   ];
   const acceptedJobs = [];
   const seenUrls = new Set();
@@ -394,6 +445,10 @@ export async function fetchLinkedInJobs() {
 
           if (seenUrls.has(jobUrl)) continue;
           if (!isValidTitle(title)) continue;
+          if (!isIndiaLocation(location)) {
+            console.log(`⏩ [Location Filter] Skipping non-India posting: "${location}" for ${title} at ${company}`);
+            continue;
+          }
 
           // 1. Fetch direct job description for full-text, recency and closed validation
           let jobDesc = "";
@@ -533,6 +588,10 @@ export async function fetchGreenhouseJobs(companyObj) {
         continue; // Discard postings older than 1 day
       }
 
+      const locName = j.location?.name || "";
+      if (!isIndiaLocation(locName)) {
+        continue;
+      }
       if (!isValidTitle(j.title)) continue;
       if (isStrictlyBackendOnly(j.content || "")) continue;
 
@@ -573,6 +632,10 @@ export async function fetchLeverJobs(companyObj) {
         continue; // Discard postings older than 1 day
       }
 
+      const locName = j.categories?.location || "";
+      if (!isIndiaLocation(locName)) {
+        continue;
+      }
       if (!isValidTitle(j.text)) continue;
       if (isStrictlyBackendOnly(j.descriptionPlain || "")) continue;
 
@@ -694,6 +757,10 @@ export async function fetchMultiPortalJobs() {
 
         const { company, role } = extractCompanyAndRole(rawTitle, url, portalName);
 
+        if (!isIndiaLocation(desc + " " + rawTitle)) {
+          console.log(`⏩ [Location Filter] Skipping non-India result (${portalName}): ${rawTitle}`);
+          continue;
+        }
         if (!isValidTitle(role)) continue;
         if (isStrictlyBackendOnly(desc)) continue;
 

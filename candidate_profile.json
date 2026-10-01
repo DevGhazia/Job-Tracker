@@ -152,32 +152,31 @@
       "Junior (1-2 yrs)",
       "SDE-1"
     ],
-    "currentLocation": "Delhi NCR / Bangalore / Remote",
+    "currentLocation": "Delhi NCR / Bangalore / India",
     "preferredLocations": [
-      "Remote",
       "Bangalore",
       "Delhi NCR",
       "Gurgaon",
       "Noida",
       "Hyderabad",
       "Pune",
-      "US / EU International Remote (USD Contracts)"
+      "Mumbai",
+      "Chennai",
+      "India (Remote)"
     ],
     "noticePeriod": "Immediate (<= 15 days)",
     "minimumSalaryINR": "8 LPA (₹8,00,000 INR)",
-    "minimumSalaryUSD": "$20,000 USD / year",
     "salaryStrategy": {
       "startup": "14 - 17 LPA",
       "growthTech": "15 - 20 LPA",
       "enterpriseTech": "18 - 22 LPA",
-      "internationalRemote": "$35,000 - $55,000 USD / year",
       "default": "15 - 20 LPA"
     }
   },
   "compliance": {
     "authorizedInIndia": true,
     "requiresIndiaVisa": false,
-    "openToInternationalRemote": true,
+    "openToInternationalRemote": false,
     "gender": "Male",
     "veteranStatus": "No",
     "disabilityStatus": "No"
