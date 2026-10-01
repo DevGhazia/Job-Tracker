@@ -77,7 +77,7 @@ export async function sendDiscordNotification(payload) {
     if (typeof payload === "string") {
       bodyData = { content: payload };
     } else if (payload && payload.jobs) {
-      const { jobs = [], count = jobs.length, searchType = "REGULAR SEARCH" } = payload;
+      const { jobs = [], count = jobs.length, searchType = "REGULAR SEARCH", prunedCount = 0 } = payload;
       const isDeep = searchType.toUpperCase().includes("DEEP");
       const icon = isDeep ? "🟣" : "⚡";
       const embedColor = isDeep ? 0x8b5cf6 : 0x3b82f6;
@@ -91,6 +91,10 @@ export async function sendDiscordNotification(payload) {
         };
       });
 
+      const prunedNote = prunedCount > 0
+        ? `\n\n🧹 **${prunedCount} outdated ${prunedCount === 1 ? 'posting' : 'postings'} removed**`
+        : "";
+
       const fallbackNote = hasFallbacks
         ? "\n\n🛡️ *Note: Some listings were preserved via Fast-Card Fallback.*"
         : "";
@@ -101,7 +105,7 @@ export async function sendDiscordNotification(payload) {
         embeds: [
           {
             title: `${icon} ${searchType.toUpperCase()} — ${count} new ${count === 1 ? 'posting' : 'postings'}`,
-            description: `Ready in your [Action Queue](https://thejobtracker.vercel.app/)${fallbackNote}`,
+            description: `Ready in your [Action Queue](https://thejobtracker.vercel.app/)${prunedNote}${fallbackNote}`,
             color: embedColor,
             fields: fields,
             url: "https://thejobtracker.vercel.app/",

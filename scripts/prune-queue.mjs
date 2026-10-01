@@ -101,6 +101,30 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
     await browser.close();
   }
 
+  if (prunedJobs.length > 0) {
+    try {
+      const { sendDiscordNotification } = await import("./notifier.mjs");
+      const timeString = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+      await sendDiscordNotification({
+        embeds: [
+          {
+            title: `🧹 Action Queue — ${prunedJobs.length} outdated ${prunedJobs.length === 1 ? "posting" : "postings"} removed`,
+            description: `Queue cleaner verified all active listings with Playwright. Automatically removed **${prunedJobs.length}** outdated or closed ${prunedJobs.length === 1 ? "posting" : "postings"}:\n\n${prunedJobs.map(j => `• **${j.company}** — ${j.role} *(${j.reason || "Closed"})*`).join("\n")}\n\n👉 [Open Action Queue](https://thejobtracker.vercel.app/)`,
+            color: 0xf59e0b,
+            footer: {
+              text: `Job Tracker • Queue Hygiene • ${timeString} IST`
+            },
+            timestamp: new Date().toISOString(),
+            url: "https://thejobtracker.vercel.app/"
+          }
+        ]
+      });
+      console.log(`📲 Discord notification sent: "${prunedJobs.length} outdated postings removed".`);
+    } catch (e) {
+      console.warn("⚠️ Could not send Discord notification for queue pruning:", e.message);
+    }
+  }
+
   console.log(`\n🎉 [Queue Health Complete] Pruned ${prunedJobs.length} expired / closed jobs out of ${snap.docs.length} checked.\n`);
   return { checkedCount: snap.docs.length, prunedCount: prunedJobs.length, prunedJobs };
 }

@@ -188,17 +188,38 @@ async function runSearchAndQueue() {
   const icon = enableDeepSearch ? "🟣" : "⚡";
   const timeString = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
 
+  const prunedCount = pruneReport?.prunedCount || 0;
+  const prunedNote = prunedCount > 0
+    ? `\n🧹 *${prunedCount} outdated ${prunedCount === 1 ? "posting" : "postings"} removed*`
+    : "";
+
   if (queuedCount > 0) {
     const summary = newlyQueued
       .slice(0, 5)
       .map((j) => `• *${j.company}* — ${j.role} (${j.portalName || j.source})`)
       .join("\n");
-    const alertMsg = `${icon} *${searchTypeLabel} — ${queuedCount} new ${queuedCount === 1 ? "posting" : "postings"}*\n\n${summary}\n\n👉 Action Queue: https://thejobtracker.vercel.app/`;
+    const alertMsg = `${icon} *${searchTypeLabel} — ${queuedCount} new ${queuedCount === 1 ? "posting" : "postings"}*${prunedNote}\n\n${summary}\n\n👉 Action Queue: https://thejobtracker.vercel.app/`;
     await sendJobAlert({
       count: queuedCount,
       jobs: newlyQueued,
       searchType: searchTypeLabel,
+      prunedCount,
       text: alertMsg
+    });
+  } else if (prunedCount > 0) {
+    await sendDiscordNotification({
+      embeds: [
+        {
+          title: `🧹 ${searchTypeLabel} — ${prunedCount} outdated ${prunedCount === 1 ? "posting" : "postings"} removed`,
+          description: `Queue health check complete. Automatically removed **${prunedCount}** outdated or closed ${prunedCount === 1 ? "listing" : "listings"} from your [Action Queue](https://thejobtracker.vercel.app/). Tracker is fresh and up-to-date.`,
+          color: 0xf59e0b,
+          footer: {
+            text: `Job Tracker • ${searchTypeLabel} • ${timeString} IST`
+          },
+          timestamp: new Date().toISOString(),
+          url: "https://thejobtracker.vercel.app/"
+        }
+      ]
     });
   } else {
     await sendDiscordNotification({
