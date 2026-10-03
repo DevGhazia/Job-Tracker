@@ -27,14 +27,32 @@ const db = getFirestore();
 const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
 /**
+ * Calculates the age of a queued job in days.
+ * @param {string} dateStr - YYYY-MM-DD
+ * @param {Date} [referenceDate]
+ * @returns {number}
+ */
+export function getJobAgeInDays(dateStr, referenceDate = new Date()) {
+  if (!dateStr || typeof dateStr !== "string") return 0;
+  const parts = dateStr.trim().split("-").map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return 0;
+  const [year, month, day] = parts;
+  const jobUtc = Date.UTC(year, month - 1, day);
+  const refUtc = Date.UTC(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+  const diffMs = refUtc - jobUtc;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+/**
  * Prunes expired or closed jobs from the user's Queued applications.
+ * Removes any job that has been in the queue for 3+ days or is no longer live/accepting applications.
  * @param {object} [existingDb]
  * @param {string} [userId]
  * @param {object} [existingBrowser]
  * @returns {Promise<{ checkedCount: number, prunedCount: number, prunedJobs: Array }>}
  */
 export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USER_ID, existingBrowser = null) {
-  console.log(`\n🧹 [Queue Health Check] Checking existing Queued jobs for dead / closed postings...`);
+  console.log(`\n🧹 [Queue Health Check] Checking existing Queued jobs for 3-day expiry & closed postings...`);
 
   const snap = await customDb
     .collection("users")
@@ -73,12 +91,32 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
     const jobUrl = data.jobUrl || data.directApplyUrl;
     const company = data.company || "Unknown Company";
     const role = data.role || "Unknown Role";
+    const jobDate = data.date;
 
-    console.log(`🔎 Verifying: ${company} — ${role}...`);
+    // 1. Time-based check: remove if listed posting in queue is 3 days old or more
+    const ageInDays = getJobAgeInDays(jobDate);
+    if (ageInDays >= 3) {
+      console.log(`  ⏰ QUEUE EXPIRY (3 DAYS): ${company} — ${role} is ${ageInDays} days old in queue.`);
+      console.log(`  🗑️ Removing doc ${doc.id} from Action Queue...`);
+
+      await customDb
+        .collection("users")
+        .doc(userId)
+        .collection("applications")
+        .doc(doc.id)
+        .delete();
+
+      prunedJobs.push({ id: doc.id, company, role, reason: `Listing in queue is ${ageInDays} days old (exceeds 3-day limit)` });
+      console.log(`  ✅ Removed from queue.`);
+      continue;
+    }
+
+    // 2. Playwright check for dead, closed, or 3+ day old source postings
+    console.log(`🔎 Verifying: ${company} — ${role} (${ageInDays}d in queue)...`);
     const viability = await checkJobViability(jobUrl, browser);
 
     if (!viability.isViable) {
-      console.log(`  ❌ DEAD LISTING DETECTED: ${viability.reason}`);
+      console.log(`  ❌ DEAD / OUTDATED LISTING DETECTED: ${viability.reason}`);
       console.log(`  🗑️ Removing doc ${doc.id} from Action Queue...`);
 
       // Delete from applications collection so it leaves the Action Queue
@@ -93,7 +131,7 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
       prunedJobs.push({ id: doc.id, company, role, reason: viability.reason });
       console.log(`  ✅ Removed from queue (company remains eligible for future postings).`);
     } else {
-      console.log(`  🟢 Active and accepting applications.`);
+      console.log(`  🟢 Active and accepting applications (${ageInDays}d in queue).`);
     }
   }
 

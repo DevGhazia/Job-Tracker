@@ -729,14 +729,22 @@ export async function checkJobViability(jobUrl, existingBrowser = null) {
       }
     }
 
-    // 2. LinkedIn specific checks
+    // 2. 3-day posting age check across all platforms (remove if >= 3 days old)
+    const is3DaysOldOnPage = /\b(?:[3-9]|\d{2,})\s*days?\s*ago\b/i.test(bodyText) ||
+                            /\bposted\s*:\s*(?:[3-9]|\d{2,})\s*days?\s*ago\b/i.test(bodyText) ||
+                            /\bposted\s+(?:[3-9]|\d{2,})\s*days?\s*ago\b/i.test(bodyText) ||
+                            /\b\d+\s*(?:weeks?|months?|years?)\s*ago\b/i.test(bodyText) ||
+                            /\b(?:30\+|15|20)\s*days?\s*ago\b/i.test(bodyText);
+
+    if (is3DaysOldOnPage) {
+      await context.close();
+      return { isViable: false, reason: "Source posting is 3+ days old" };
+    }
+
     const urlLower = jobUrl.toLowerCase();
     if (urlLower.includes("linkedin.com")) {
       const applyBtnCount = await page.locator("button:has-text('Apply'), a:has-text('Apply'), button.apply-button, a.apply-button, [aria-label*='Apply']").count();
-      const isStale = /\b(?:[3-9]|\d{2,})\s*days?\s*ago\b/i.test(bodyText) ||
-                      /\b\d+\s*(?:weeks?|months?|years?)\s*ago\b/i.test(bodyText);
-
-      if (applyBtnCount === 0 && (isStale || combined.includes("applicants"))) {
+      if (applyBtnCount === 0) {
         await context.close();
         return { isViable: false, reason: "LinkedIn listing has no Apply button (closed or applicant limit reached)" };
       }
