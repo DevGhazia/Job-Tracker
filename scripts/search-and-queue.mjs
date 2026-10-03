@@ -160,6 +160,7 @@ async function runSearchAndQueue() {
       notes: tailoredPitch,
       status: "Queued",
       date: today,
+      queuedAt: new Date().toISOString(),
       didInterview: false,
       mandatoryRequirements,
       niceToHave,

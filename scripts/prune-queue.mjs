@@ -32,15 +32,30 @@ const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
  * @param {Date} [referenceDate]
  * @returns {number}
  */
-export function getJobAgeInDays(dateStr, referenceDate = new Date()) {
-  if (!dateStr || typeof dateStr !== "string") return 0;
-  const parts = dateStr.trim().split("-").map(Number);
-  if (parts.length !== 3 || parts.some(isNaN)) return 0;
-  const [year, month, day] = parts;
-  const jobUtc = Date.UTC(year, month - 1, day);
-  const refUtc = Date.UTC(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+export function getJobAgeInDays(dateVal, referenceDate = new Date()) {
+  if (!dateVal) return 0;
+  let jobDate;
+  if (typeof dateVal === "string") {
+    const trimmed = dateVal.trim();
+    if (trimmed.includes("T")) {
+      jobDate = new Date(trimmed);
+    } else {
+      const parts = trimmed.split("-").map(Number);
+      if (parts.length === 3 && !parts.some(isNaN)) {
+        jobDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      }
+    }
+  } else if (dateVal instanceof Date) {
+    jobDate = dateVal;
+  } else if (dateVal && typeof dateVal.toDate === "function") {
+    jobDate = dateVal.toDate();
+  }
+  if (!jobDate || isNaN(jobDate.getTime())) return 0;
+
+  const jobUtc = Date.UTC(jobDate.getUTCFullYear(), jobDate.getUTCMonth(), jobDate.getUTCDate());
+  const refUtc = Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth(), referenceDate.getUTCDate());
   const diffMs = refUtc - jobUtc;
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 }
 
 /**
@@ -91,7 +106,7 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
     const jobUrl = data.jobUrl || data.directApplyUrl;
     const company = data.company || "Unknown Company";
     const role = data.role || "Unknown Role";
-    const jobDate = data.date;
+    const jobDate = data.queuedAt || data.date;
 
     // 1. Time-based check: remove if listed posting in queue is 3 days old or more
     const ageInDays = getJobAgeInDays(jobDate);
@@ -111,7 +126,7 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
       continue;
     }
 
-    // 2. Playwright check for dead, closed, or 3+ day old source postings
+    // 2. Playwright check for dead or closed listings (404, no apply button, closed text)
     console.log(`🔎 Verifying: ${company} — ${role} (${ageInDays}d in queue)...`);
     const viability = await checkJobViability(jobUrl, browser);
 
