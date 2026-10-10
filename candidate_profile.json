@@ -36,15 +36,15 @@
     },
     {
       "company": "BYJU'S",
-      "role": "Software Engineer - Frontend Web Applications",
+      "role": "Software Engineer – Interactive Web & Simulation Applications",
       "startDate": "01-2021",
       "endDate": "01-2023",
       "location": "Bangalore, India",
       "highlights": [
-        "Developed and maintained 50+ interactive web-based applications using TypeScript and React, serving 2M+ active learners with 99.8% uptime.",
-        "Engineered high-performance UI systems with complex animations and real-time state updates, maintaining a smooth 60 FPS on low-end devices.",
-        "Improved application efficiency and rendering logic, optimizing memory usage and UI responsiveness across web clients.",
-        "Collaborated with cross-functional teams (Product Managers, UX Designers, Backend SDEs) in an Agile sprint cadence to ship 15+ feature releases on schedule."
+        "Engineered 50+ interactive web simulations and gamified learning modules using TypeScript, JavaScript, and Cocos3D / Canvas engines, serving 2M+ learners.",
+        "Optimized frame rendering pipelines, asset bundling, and draw calls to sustain a consistent 60 FPS across low-end mobile and web browser clients.",
+        "Architected client-side state machines, event systems, and dynamic math/science simulation logic for interactive curriculum products.",
+        "Collaborated with Product Managers, UX Designers, and Web Platform teams in Agile sprints to ship 15+ major feature releases on schedule."
       ]
     },
     {
@@ -86,25 +86,26 @@
     "languages": [
       "TypeScript",
       "JavaScript (ES6+)",
-      "HTML5",
-      "CSS3"
+      "HTML5 Canvas",
+      "WebGL",
+      "CSS3",
+      "C#"
     ],
-    "frontend": [
+    "frameworks_engines": [
       "React.js",
-      "React Native",
       "Redux Toolkit",
-      "Context API",
+      "Cocos Creator / Cocos3D",
       "Tailwind CSS",
       "Shadcn/ui",
       "React-Router"
     ],
     "architecture_performance": [
+      "60 FPS Rendering Optimization",
+      "State Machines",
+      "Memory Profiling",
+      "Asset Bundling",
       "Core Web Vitals",
-      "Code-Splitting",
-      "Lazy Loading",
-      "RESTful APIs",
-      "Web Performance Optimization",
-      "State Management"
+      "RESTful APIs"
     ],
     "tools_testing": [
       "Git",
@@ -117,14 +118,13 @@
       "VS Code"
     ],
     "core": [
-      "React",
       "TypeScript",
       "JavaScript",
-      "Redux",
-      "ContextAPI",
-      "TailwindCSS",
-      "HTML5",
-      "CSS3"
+      "React",
+      "Cocos3D",
+      "HTML5 Canvas",
+      "Redux Toolkit",
+      "TailwindCSS"
     ],
     "tools": [
       "VS Code",

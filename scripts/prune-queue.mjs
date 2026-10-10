@@ -126,6 +126,32 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
       continue;
     }
 
+    // 1.5. Safety check: remove if queued job is an intern, trainee, or senior role that slipped in
+    const roleLower = role.toLowerCase();
+    const isIntern = /\b(intern|internship|trainee|apprentice|co-?op)\b/i.test(roleLower);
+    const isSenior = /\b(senior|sr\.?|staff|principal|lead|architect|director|manager|avp|vp)\b/i.test(roleLower) ||
+                     /(?:engineer|developer|sde|swe|mts|specialist|craftsperson)\s*(?:[2-9]|ii|iii|iv|v|vi)\b/i.test(roleLower) ||
+                     /\b(ii|iii|iv|v|vi)\b/i.test(roleLower);
+    const isHighExp = /\b(?:[2-9]|\d{2,})\s*[-–—to]\s*(?:[4-9]|\d{2,})\s*(?:years?|yrs?|yoe)?\b/i.test(roleLower) ||
+                      /\b(?:[3-9]|\d{2,})\s*\+?\s*(?:years?|yrs?|yoe)?\b/i.test(roleLower);
+
+    if (isIntern || isSenior || isHighExp) {
+      const reason = isIntern ? "Internship / Trainee role strictly excluded" : (isSenior ? "Senior / Level II+ role strictly excluded" : "Out of 0-2 YOE range");
+      console.log(`  🚫 QUEUE PURGE (${reason}): ${company} — ${role}`);
+      console.log(`  🗑️ Removing doc ${doc.id} from Action Queue...`);
+
+      await customDb
+        .collection("users")
+        .doc(userId)
+        .collection("applications")
+        .doc(doc.id)
+        .delete();
+
+      prunedJobs.push({ id: doc.id, company, role, reason });
+      console.log(`  ✅ Removed from queue.`);
+      continue;
+    }
+
     // 2. Playwright check for dead or closed listings (404, no apply button, closed text)
     console.log(`🔎 Verifying: ${company} — ${role} (${ageInDays}d in queue)...`);
     const viability = await checkJobViability(jobUrl, browser);

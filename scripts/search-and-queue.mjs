@@ -92,7 +92,7 @@ async function runSearchAndQueue() {
   const newlyQueued = [];
   const today = new Date().toISOString().split("T")[0];
 
-  const { proofreadJobWithPlaywright, extractJobRequirements } = await import("./verifier.mjs");
+  const { proofreadJobWithPlaywright, extractJobRequirements, parseExperienceFromText } = await import("./verifier.mjs");
 
   for (const job of jobs) {
     const cleanCompany = (job.company || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -106,7 +106,7 @@ async function runSearchAndQueue() {
     }
 
     // 🔬 STAGE 2: Playwright Source Page Proofreading (Recency & Structured Extraction)
-    let verifiedExp = job.experience || "0 - 2 YOE";
+    let verifiedExp = job.experience ? (typeof job.experience === "number" ? `${job.experience} yrs` : job.experience) : "0-2 yrs";
     let mandatoryRequirements = job.mandatoryRequirements || [];
     let niceToHave = job.niceToHave || [];
     let mandatoryBullets = job.mandatoryBullets || [];
@@ -136,7 +136,13 @@ async function runSearchAndQueue() {
       if (!directApplyUrl && proof.autoApplyUrl) directApplyUrl = proof.autoApplyUrl;
       console.log(`✅ [Playwright Verified Fresh 0-2 YOE] ${job.role} at ${job.company} (${verifiedExp}) [AutoApply: ${autoApplyMode}]`);
     } else {
-      // Fallback extraction from snippet/description
+      // Fallback verification when Playwright browser is unavailable
+      const fallbackParsed = parseExperienceFromText(job.description || job.snippet || "", job.role);
+      if (!fallbackParsed.isSuitable) {
+        console.log(`🚫 [Fallback Verification Rejection] Skipping ${job.role} at ${job.company}: ${fallbackParsed.reason || "Exceeds 0-2 YOE or excluded role"}`);
+        continue;
+      }
+      verifiedExp = fallbackParsed.raw || verifiedExp;
       const fallbackReqs = extractJobRequirements(job.description || job.snippet || "", "", job.jobUrl, job.role);
       mandatoryRequirements = fallbackReqs.mandatoryRequirements;
       niceToHave = fallbackReqs.niceToHave;

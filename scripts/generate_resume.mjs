@@ -178,7 +178,7 @@ const html = `
   <!-- Header -->
   <div class="header">
     <div class="name">${profile.personal.fullName}</div>
-    <div class="headline">Frontend Software Engineer | React, TypeScript, Redux & UI Architecture</div>
+    <div class="headline">Software Engineer – Interactive Web & Frontend | TypeScript, React, Cocos / Canvas & UI Engineering</div>
     <div class="contact-bar">
       <span>📍 ${profile.personal.currentLocation}</span>
       <span>📞 ${profile.personal.phone}</span>
@@ -192,7 +192,7 @@ const html = `
   <!-- Summary -->
   <h2>Professional Summary</h2>
   <p style="color: #334155; font-size: 10.5px; margin-bottom: 1px;">
-    <strong>Frontend Engineer (IIT Roorkee, 2+ YOE)</strong> specializing in <strong>React, TypeScript, Redux Toolkit, and scalable UI architecture</strong>. Track record of engineering 50+ high-traffic web applications at BYJU'S serving 2M+ learners with 99.8% uptime. Adept at rendering performance optimization, state management, and building responsive, accessible web interfaces.
+    <strong>Software Engineer (IIT Roorkee, 2+ YOE)</strong> specializing in <strong>TypeScript, interactive web applications, and modern frontend architectures (React)</strong>. Track record at BYJU'S engineering 50+ high-performance simulations and gamified web modules serving 2M+ learners at 60 FPS. Skilled in client-side state machines, Canvas/WebGL rendering, and modern React web applications.
   </p>
 
   <!-- Experience -->
@@ -236,15 +236,15 @@ const html = `
   <div class="skills-table">
     <div class="skills-row">
       <span class="skills-cat">Languages & Web:</span>
-      <span class="skills-val">TypeScript, JavaScript (ES6+), HTML5, CSS3, Sass</span>
+      <span class="skills-val">TypeScript, JavaScript (ES6+), HTML5 Canvas, WebGL, CSS3, C#</span>
     </div>
     <div class="skills-row">
-      <span class="skills-cat">Frameworks & Libraries:</span>
-      <span class="skills-val">React.js, React Native, Redux Toolkit, Context API, Tailwind CSS, Shadcn/ui, React-Router</span>
+      <span class="skills-cat">Frameworks & Engines:</span>
+      <span class="skills-val">React.js, Redux Toolkit, Cocos Creator / Cocos3D, React Router, Tailwind CSS, Shadcn/ui</span>
     </div>
     <div class="skills-row">
-      <span class="skills-cat">Architecture & Performance:</span>
-      <span class="skills-val">Core Web Vitals, Code-Splitting, Lazy Loading, RESTful APIs, State Management, Responsive Design</span>
+      <span class="skills-cat">Rendering & Performance:</span>
+      <span class="skills-val">60 FPS Optimization, Memory Profiling, State Machines, Asset Bundling, RESTful APIs</span>
     </div>
     <div class="skills-row">
       <span class="skills-cat">Tooling & Workflow:</span>

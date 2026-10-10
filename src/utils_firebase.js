@@ -1,5 +1,13 @@
 import { auth, googleProvider, db } from "./firebase";
-import { onAuthStateChanged, signInWithPopup } from "firebase/auth";
+import {
+    onAuthStateChanged,
+    signInWithPopup,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    updateProfile,
+    signOut
+} from "firebase/auth";
 import { addDoc, collection, onSnapshot, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 
 export const addApplication = async (data) => {
@@ -155,12 +163,82 @@ export const addDmLead = async (data) => {
     });
 };
 
-export default async function handleGoogleLogin() {
+// Authentication helpers
+export const signInWithGoogle = async () => {
     try {
-        await signInWithPopup(auth, googleProvider);
+        const result = await signInWithPopup(auth, googleProvider);
+        return result.user;
+    } catch (err) {
+        console.error("Google sign-in error:", err);
+        throw err;
     }
-    catch (err) {
-        console.error(err);
+};
+
+export const signInWithEmail = async (email, password) => {
+    try {
+        const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+        return cred.user;
+    } catch (err) {
+        console.error("Email sign-in error:", err);
+        throw err;
     }
-}
+};
+
+export const signUpWithEmail = async (email, password, displayName = "") => {
+    try {
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        if (displayName && displayName.trim()) {
+            await updateProfile(cred.user, { displayName: displayName.trim() });
+        }
+        return cred.user;
+    } catch (err) {
+        console.error("Email signup error:", err);
+        throw err;
+    }
+};
+
+export const resetPassword = async (email) => {
+    try {
+        await sendPasswordResetEmail(auth, email.trim());
+    } catch (err) {
+        console.error("Password reset error:", err);
+        throw err;
+    }
+};
+
+export const formatAuthError = (err) => {
+    if (!err) return "An unexpected error occurred. Please try again.";
+    const code = err.code || "";
+    switch (code) {
+        case "auth/popup-closed-by-user":
+            return "Sign-in popup was closed before completing.";
+        case "auth/popup-blocked":
+            return "The Google sign-in popup was blocked by your browser. Please allow popups for this site.";
+        case "auth/cancelled-popup-request":
+            return "Multiple sign-in attempts detected. Please try again.";
+        case "auth/invalid-email":
+            return "Please enter a valid email address.";
+        case "auth/user-not-found":
+            return "No account exists with this email address. Please sign up.";
+        case "auth/wrong-password":
+            return "Incorrect password. Please try again.";
+        case "auth/invalid-credential":
+            return "Invalid email or password. Please verify your credentials.";
+        case "auth/email-already-in-use":
+            return "An account is already registered with this email. Try logging in instead.";
+        case "auth/weak-password":
+            return "Password should be at least 6 characters long.";
+        case "auth/too-many-requests":
+            return "Access temporarily blocked due to many failed attempts. Try again later or reset your password.";
+        case "auth/network-request-failed":
+            return "Network connection error. Please check your internet connection.";
+        case "auth/account-exists-with-different-credential":
+            return "An account already exists with this email using a different sign-in method.";
+        default:
+            return err.message || "An authentication error occurred. Please try again.";
+    }
+};
+
+export const handleGoogleLogin = signInWithGoogle;
+export default signInWithGoogle;
 

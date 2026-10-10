@@ -30,17 +30,40 @@ const TARGET_TECH_KEYWORDS = [
   "associate software engineer", "associate frontend", "entry level frontend"
 ];
 
-// TITLE EXCLUSIONS: Seniority, High YOE, purely non-frontend titles
+// TITLE EXCLUSIONS: Seniority, High YOE, internships, purely non-frontend titles
 const TITLE_EXCLUSIONS = [
   "senior", "sr.", "sr ", "staff", "principal", "lead", "manager", "director", "architect",
   "sde 2", "sde-2", "sde 3", "sde-3", "sde ii", "sde iii", "sde-ii", "sde-iii", "team lead", "head of",
+  "intern", "internship", "trainee", "apprentice", "co-op", "coop",
+  "specialist 3", "specialist iii", "specialist 2", "specialist ii", "craftsperson iii", "craftsperson ii",
   "3+", "4+", "5+", "6+", "7+", "8+", "3-5", "4-6", "5-7", "3 to 5", "4 to 6",
+  "2-4", "2-5", "2-6", "2-7", "2 to 4", "2 to 5", "2 to 6", "2 to 7",
+  "2–4", "2–5", "2–6", "2–7",
+  "3-6", "3-7", "3-8", "3 to 7", "3 to 8",
+  "4-8", "5-10", "6-8", "5-8", "6-10",
   "backend", "back-end", "back end", "python developer", "java developer", "golang", "go developer",
   "django developer", "flask developer", "spring boot", "solidity", "blockchain", "smart contract", "web3",
   "flutter", "react native", "react-native", "android", "ios", "mobile developer", "mobile engineer",
   "devops", "cloud engineer", "qa engineer", "qa automation", "test engineer", "data engineer", "data scientist", "machine learning",
   "stipend", "unpaid", "avp", "vp", "vice president"
 ];
+
+export function normalizeNumberWords(str = "") {
+  return str
+    .replace(/\bzero\b/gi, "0")
+    .replace(/\bone\b/gi, "1")
+    .replace(/\btwo\b/gi, "2")
+    .replace(/\bthree\b/gi, "3")
+    .replace(/\bfour\b/gi, "4")
+    .replace(/\bfive\b/gi, "5")
+    .replace(/\bsix\b/gi, "6")
+    .replace(/\bseven\b/gi, "7")
+    .replace(/\beight\b/gi, "8")
+    .replace(/\bnine\b/gi, "9")
+    .replace(/\bten\b/gi, "10")
+    .replace(/\bor more\b/gi, "+")
+    .replace(/\band above\b/gi, "+");
+}
 
 import FirecrawlApp from "@mendable/firecrawl-js";
 
@@ -192,20 +215,32 @@ export function isStrictlyBackendOnly(text = "") {
 
 export function extractExperience(text = "") {
   if (!text) return { valid: true, exp: 2 };
-  const lower = text.toLowerCase();
+
+  // 1. Upfront Internship / Trainee check
+  if (/\b(intern|internship|trainee|apprentice|co-?op)\b/i.test(text)) {
+    if (/\b(?:position|role|job|hiring|seeking|looking for|title)\s+(?:an?|for)?\s*(?:intern|internship|trainee|apprentice)\b/i.test(text) ||
+        /\b(?:internship opening|trainee opening|summer intern|react intern|frontend intern|intern developer|intern engineer)\b/i.test(text)) {
+      return { valid: false, exp: 0, reason: "Internship / Trainee role excluded" };
+    }
+  }
+
+  const normalized = normalizeNumberWords(text);
+  const lower = normalized.toLowerCase();
 
   // Split into required section vs nice-to-have to avoid rejecting jobs where 3+ years is only a "bonus/preferred"
   const niceToHaveIdx = lower.search(/(?:nice to have|good to have|bonus points|preferred qualifications|optional|plus points|not mandatory|pluses)/i);
   const requiredSection = niceToHaveIdx !== -1 ? lower.slice(0, niceToHaveIdx) : lower;
 
-  // 1. High Experience Rejection Patterns (> 2 years in required section)
-  // Handles "min 3 years of hands-on experience", "at least 3 years in react", "3-5 years", "over 3 years", etc.
+  // High Experience Rejection Patterns (> 2 years or wide ranges starting from 2)
   const highExpPatterns = [
+    /\b([3-9]|\d{2,})\s*(?:\+\s*(?:years?|yrs?|yoe)\b|(?:years?|yrs?|yoe)\s*(?:\+|or more|and above))/i,
     /(?:[3-9]|\d{2,})\s*\+\s*(?:years?|yrs?|yoe)/i,
-    /(?:[3-9]|\d{2,})\s*(?:-|to)\s*\d+\s*(?:years?|yrs?|yoe)/i,
+    /(?:[3-9]|\d{2,})\s*(?:-|–|—|to)\s*\d+\s*(?:years?|yrs?|yoe)/i,
+    /(?:[2-9])\s*(?:-|–|—|to)\s*(?:[4-9]|\d{2,})\s*(?:years?|yrs?|yoe)/i, // 2-4, 2-5, 2-6 yrs!
     /(?:min|minimum|at least|over|more than|around|approx|about)\s+(?:of\s+)?(?:[3-9]|\d{2,})\s*(?:\+)?\s*(?:years?|yrs?|yoe)/i,
     /(?:[3-9]|\d{2,})\s*(?:\+)?\s*(?:years?|yrs?|yoe)\s+(?:of\s+)?(?:hands[\s-]on|relevant|professional|industry|commercial|proven|solid|deep|practical)?\s*(?:work\s+)?experience/i,
-    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–]\s*(?:min|at least)?\s*(?:[3-9]|\d{2,})/i
+    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–—]\s*(?:min|at least)?\s*(?:[3-9]|\d{2,})/i,
+    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–—]\s*(?:[2-9])\s*(?:-|–|—|to)\s*(?:[4-9]|\d{2,})/i
   ];
 
   for (const pattern of highExpPatterns) {
@@ -216,18 +251,19 @@ export function extractExperience(text = "") {
   }
 
   // 2. Target 0-2 YOE Matching (Handles "min 2 years hands on experience with react", "0-2 years", "fresher", etc.)
+  // Intern is strictly excluded.
   const targetExpPatterns = [
     /(?:min|minimum|at least|around|approx|about)\s+(?:of\s+)?([0-2])\s*(?:\+)?\s*(?:years?|yrs?|yoe)/i,
     /(?:0\s*-\s*1|0\s*-\s*2|1\s*-\s*2|0\s*to\s*2|1\s*to\s*2|1\s*-\s*3|2\s*-\s*3)\s*(?:years?|yrs?|yoe)/i,
     /([0-2])\s*(?:\+)?\s*(?:years?|yrs?|yoe)\s*(?:of)?\s*(?:hands[\s-]on|relevant|professional|industry|practical|proven)?\s*(?:work\s+)?experience/i,
-    /(?:fresher|entry[\s-]level|junior|graduate|intern|associate)\s*(?:frontend|developer|engineer|software)?/i
+    /(?:fresher|entry[\s-]level|junior|graduate|associate)\s*(?:frontend|developer|engineer|software)?/i
   ];
 
   for (const pattern of targetExpPatterns) {
     const match = requiredSection.match(pattern);
     if (match) {
       const matchStr = match[0].toLowerCase();
-      if (matchStr.includes("0") || matchStr.includes("1") || matchStr.includes("fresher") || matchStr.includes("junior") || matchStr.includes("intern") || matchStr.includes("graduate")) {
+      if (matchStr.includes("0") || matchStr.includes("1") || matchStr.includes("fresher") || matchStr.includes("junior") || matchStr.includes("graduate")) {
         return { valid: true, exp: 1 };
       }
       return { valid: true, exp: 2 };
@@ -237,16 +273,38 @@ export function extractExperience(text = "") {
   return { valid: true, exp: 2 };
 }
 
-function isValidTitle(title = "") {
-  const t = title.toLowerCase();
-  for (const ex of TITLE_EXCLUSIONS) {
-    if (t.includes(ex)) return false;
-  }
-  // Reject level II/III/IV or 2/3/4/5 suffixes in engineer/developer titles
-  if (/(?:engineer|developer|sde|swe|member of technical staff|mts)\s*[-–—:]?\s*(?:ii|iii|iv|v|2|3|4|5|6)\b/i.test(t)) {
+export function isValidTitle(title = "") {
+  if (!title) return false;
+  const norm = title.replace(/[_/\-–—|:]+/g, " ").toLowerCase();
+
+  // 1. Strict internship / trainee check with word boundaries
+  if (/\b(intern|internship|trainee|apprentice|co-?op)\b/i.test(norm)) {
     return false;
   }
-  return TARGET_TECH_KEYWORDS.some(kw => t.includes(kw));
+
+  // 2. Exclusions check
+  for (const ex of TITLE_EXCLUSIONS) {
+    if (norm.includes(ex) || title.toLowerCase().includes(ex)) return false;
+  }
+
+  // 3. Reject level II/III/IV or 2/3/4/5 suffixes or Roman numerals
+  if (/(?:engineer|developer|sde|swe|member of technical staff|mts|specialist|craftsperson|consultant)\s*(?:[2-9]|ii|iii|iv|v|vi)\b/i.test(norm)) {
+    return false;
+  }
+  if (/\b(ii|iii|iv|v|vi)\b/i.test(norm)) {
+    return false;
+  }
+  if (/\b(?:level|lvl|l)[-\s]*[2-9]\b/i.test(norm)) {
+    return false;
+  }
+
+  // 4. Reject experience in titles (> 2 YOE or ranges like 2-5, 3+, etc.)
+  if (/\b(?:[2-9]|\d{2,})\s*[-–—to]\s*(?:[4-9]|\d{2,})\s*(?:years?|yrs?|yoe)?\b/i.test(norm) ||
+      /\b(?:[3-9]|\d{2,})\s*\+?\s*(?:years?|yrs?|yoe)?\b/i.test(norm)) {
+    return false;
+  }
+
+  return TARGET_TECH_KEYWORDS.some(kw => norm.includes(kw));
 }
 
 /**
@@ -413,8 +471,8 @@ export async function fetchLinkedInJobs() {
     for (const start of pageOffsets) {
       try {
         // f_TPR=r86400 ensures posted <= 24 hours / 1 day ago.
-        // NOTE: We omit restrictive f_E filter so we do not miss unclassified/misclassified 0-2 YOE postings.
-        const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r86400&start=${start}`;
+        // f_E=2,3 filters for Entry level (2) and Associate (3), cutting out Mid-Senior and Director postings.
+        const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(q)}&location=${encodeURIComponent(loc)}&f_TPR=r86400&f_E=2,3&start=${start}`;
         const res = await fetch(searchUrl, {
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -445,6 +503,11 @@ export async function fetchLinkedInJobs() {
 
           if (seenUrls.has(jobUrl)) continue;
           if (!isValidTitle(title)) continue;
+          const titleExpCheck = extractExperience(title);
+          if (!titleExpCheck.valid) {
+            console.log(`⏩ Skipping title with high experience: "${title}" at ${company}`);
+            continue;
+          }
           if (!isIndiaLocation(location)) {
             console.log(`⏩ [Location Filter] Skipping non-India posting: "${location}" for ${title} at ${company}`);
             continue;
@@ -522,6 +585,8 @@ export async function fetchLinkedInJobs() {
               continue;
             }
             assignedExp = expCheck.exp;
+          } else {
+            assignedExp = titleExpCheck.exp || 1;
           }
 
           const clearoutLogo = await fetchClearoutLogo(company);

@@ -1,29 +1,89 @@
 import { chromium } from "playwright";
 
+export function normalizeNumberWords(str = "") {
+  return str
+    .replace(/\bzero\b/gi, "0")
+    .replace(/\bone\b/gi, "1")
+    .replace(/\btwo\b/gi, "2")
+    .replace(/\bthree\b/gi, "3")
+    .replace(/\bfour\b/gi, "4")
+    .replace(/\bfive\b/gi, "5")
+    .replace(/\bsix\b/gi, "6")
+    .replace(/\bseven\b/gi, "7")
+    .replace(/\beight\b/gi, "8")
+    .replace(/\bnine\b/gi, "9")
+    .replace(/\bten\b/gi, "10")
+    .replace(/\bor more\b/gi, "+")
+    .replace(/\band above\b/gi, "+");
+}
+
 /**
  * Extracts experience requirements from raw text with strict range-aware matching.
  * @param {string} text 
  * @param {string} [jobTitle]
- * @returns {{ minYoe: number, maxYoe: number, raw: string, isSenior: boolean, isSuitable: boolean }}
+ * @returns {{ minYoe: number, maxYoe: number, raw: string, isSenior: boolean, isSuitable: boolean, reason?: string }}
  */
 export function parseExperienceFromText(text = "", jobTitle = "") {
-  const clean = text.replace(/\s+/g, " ");
+  const cleanTitle = (jobTitle || "").replace(/[_/\-–—|:]+/g, " ");
 
-  // Check if the role TITLE itself is senior/staff/lead
-  const isSeniorTitle = /\b(senior|sr\.|sr |staff|principal|lead|architect|director|manager|avp|vp)\b/i.test(jobTitle);
+  // 1. Title Checks
+  const isSeniorTitle = /\b(senior|sr\.?|staff|principal|lead|architect|director|manager|avp|vp|vice president|head of)\b/i.test(cleanTitle) ||
+                        /(?:engineer|developer|sde|swe|mts|specialist|craftsperson|consultant)\s*(?:[2-9]|ii|iii|iv|v|vi)\b/i.test(cleanTitle) ||
+                        /\b(ii|iii|iv|v|vi)\b/i.test(cleanTitle) ||
+                        /\b(?:level|lvl|l)[-\s]*[2-9]\b/i.test(cleanTitle);
+
+  const isInternTitle = /\b(intern|internship|trainee|apprentice|co-?op)\b/i.test(cleanTitle);
+
+  if (isInternTitle) {
+    return {
+      minYoe: 0,
+      maxYoe: 0,
+      raw: "Intern",
+      isSenior: false,
+      isSuitable: false,
+      reason: "Internship / Trainee role strictly excluded"
+    };
+  }
+
+  // Check experience tags in title: e.g. "2–5 Years", "3+ YOE", "4-6 yrs"
+  const titleExpMatch = cleanTitle.match(/\b([2-9]|\d{2,})\s*[-–—to]\s*([4-9]|\d{2,})\s*(?:years?|yrs?|yoe)?\b/i) ||
+                        cleanTitle.match(/\b([3-9]|\d{2,})\s*\+\s*(?:years?|yrs?|yoe)?\b/i);
+  if (titleExpMatch) {
+    return {
+      minYoe: parseInt(titleExpMatch[1], 10),
+      maxYoe: titleExpMatch[2] ? parseInt(titleExpMatch[2], 10) : parseInt(titleExpMatch[1], 10) + 2,
+      raw: titleExpMatch[0],
+      isSenior: true,
+      isSuitable: false,
+      reason: `Title specifies >2 YOE: "${titleExpMatch[0]}"`
+    };
+  }
+
+  // 2. Body Text Checks
+  const clean = normalizeNumberWords(text).replace(/\s+/g, " ");
+
+  // Body intern check
+  if (/\b(?:role|position|job|hiring|seeking|looking for|title)\s+(?:an?|for)?\s*(?:intern|internship|trainee|apprentice)\b/i.test(clean) ||
+      /\b(?:internship opening|trainee opening|summer intern|react intern|frontend intern)\b/i.test(clean)) {
+    return {
+      minYoe: 0,
+      maxYoe: 0,
+      raw: "Intern",
+      isSenior: false,
+      isSuitable: false,
+      reason: "Internship / Trainee posting strictly excluded"
+    };
+  }
 
   let minYoe = null;
   let maxYoe = null;
 
-  // ─── PHASE 1: Try to find a RANGE pattern first (most specific wins) ───────
-  // Handles: "2-5 years", "1 to 3 years", "2 to 5 yrs", "0-2 years of experience"
+  // Phase 1: Range patterns
   const rangePatterns = [
-    // "X-Y years/yrs/yoe" — most common form
-    /\b([0-9]+)\s*[-–]\s*([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
-    // "X to Y years/yrs/yoe"
+    /\b([0-9]+)\s*[-–—]\s*([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
     /\b([0-9]+)\s+to\s+([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
-    // "minimum/at least/require X years to Y years" — e.g. "Minimum 2 years to 5 years"
-    /(?:minimum|min|at least|require(?:s|d)?)\s+([0-9]+)\s*(?:years?|yrs?|yoe)?\s*(?:-|–|to)\s*([0-9]+)\s*(?:years?|yrs?|yoe)/i,
+    /(?:minimum|min\.?|at least|require(?:s|d)?)\s+([0-9]+)\s*(?:years?|yrs?|yoe)?\s*(?:-|–|—|to)\s*([0-9]+)\s*(?:years?|yrs?|yoe)/i,
+    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–—]\s*([0-9]+)\s*[-–—to]\s*([0-9]+)\s*(?:years?|yrs?|yoe)?/i
   ];
 
   for (const regex of rangePatterns) {
@@ -31,37 +91,37 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     if (match) {
       minYoe = parseInt(match[1], 10);
       maxYoe = parseInt(match[2], 10);
-      // Sanity check: don't accept reversed or nonsensical ranges
       if (minYoe > maxYoe) [minYoe, maxYoe] = [maxYoe, minYoe];
       break;
     }
   }
 
-  // ─── PHASE 2: If no range found, look for a single-number or X+ pattern ───
+  // Phase 2: Single or X+ patterns
   if (minYoe === null) {
-    const singlePatterns = [
-      // "X+ years" / "X+ yrs" — treat as open-ended minimum
-      /\b([0-9]+)\s*\+\s*(?:years?|yrs?|yoe)\b/i,
-      // "minimum/at least/require X years"
-      /(?:minimum|min\.?|at least|require(?:s|d)?)\s+([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
-      // "X years of experience" with no range
-      /\b([0-9]+)\s*(?:years?|yrs?|yoe)\s*of\s*(?:relevant|professional|hands-on|industry|work)?\s*experience/i,
-      // "experience: X years"
-      /experience\s*:\s*([0-9]+)\s*(?:years?|yrs?|yoe)?/i,
-    ];
+    const plusPattern = /\b([0-9]+)\s*(?:\+\s*(?:years?|yrs?|yoe)\b|(?:years?|yrs?|yoe)\s*(?:\+|or more|and above))/i;
+    const plusMatch = clean.match(plusPattern);
+    if (plusMatch) {
+      minYoe = parseInt(plusMatch[1], 10);
+      maxYoe = minYoe + (minYoe >= 3 ? 2 : 1);
+    } else {
+      const singlePatterns = [
+        /(?:minimum|min\.?|at least|over|more than|require(?:s|d)?)\s+([0-9]+)\s*(?:years?|yrs?|yoe)\b/i,
+        /\b([0-9]+)\s*(?:years?|yrs?|yoe)\s*of\s*(?:relevant|professional|hands-on|industry|commercial|work)?\s*experience/i,
+        /(?:experience|yoe|exp)\s*[:\-–—]\s*(?:min|at least)?\s*([0-9]+)\s*(?:years?|yrs?|yoe)?/i,
+      ];
 
-    for (const regex of singlePatterns) {
-      const match = clean.match(regex);
-      if (match) {
-        minYoe = parseInt(match[1], 10);
-        // For "X+" or standalone, set maxYoe conservatively high so strict check catches it
-        maxYoe = minYoe >= 2 ? minYoe + 2 : minYoe;
-        break;
+      for (const regex of singlePatterns) {
+        const match = clean.match(regex);
+        if (match) {
+          minYoe = parseInt(match[1], 10);
+          maxYoe = minYoe;
+          break;
+        }
       }
     }
   }
 
-  // ─── PHASE 3: Fallback to entry-level keywords ────────────────────────────
+  // Phase 3: Fallback entry-level keywords
   if (minYoe === null) {
     if (/\b(fresher|entry[- ]level|fresh graduate|0[- ]1 year|0[- ]2 year|early career|recent graduate)\b/i.test(clean)) {
       minYoe = 0;
@@ -69,7 +129,7 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     }
   }
 
-  // ─── Build display tag ────────────────────────────────────────────────────
+  // Display tag
   let cleanTag = "0-2 yrs";
   if (minYoe !== null && maxYoe !== null) {
     if (minYoe === maxYoe) {
@@ -81,21 +141,22 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     cleanTag = `${minYoe} yrs`;
   }
 
-  // ─── SUITABILITY DECISION ─────────────────────────────────────────────────
-  // Reject only if the role STARTS above the candidate's 2 YOE profile.
-  // e.g. minYoe=3 → "3-5 yrs" → reject (candidate can't even meet the minimum)
-  // e.g. minYoe=2 → "2-5 yrs" → ALLOW and display "2-5 yrs" on the card
-  //      The candidate (2 YOE) is eligible to apply — we just show the real range.
-  const isSenior = isSeniorTitle || (minYoe !== null && minYoe >= 3);
-
-  const isSuitable = !isSenior && (minYoe === null || minYoe <= 2);
+  // Strict suitability decision
+  // Suitable ONLY if:
+  // - Not a senior title
+  // - minYoe <= 2 (or null)
+  // - maxYoe <= 3 (or null)
+  // i.e., 0-1, 0-2, 1-2, 1-3, 0-3, or 2 yrs. Anything like 2-5, 2-4, 3+, 3-5, 4+, 5-10 is REJECTED.
+  const isSenior = isSeniorTitle || (minYoe !== null && minYoe >= 3) || (maxYoe !== null && maxYoe >= 4);
+  const isSuitable = !isSenior && (minYoe === null || minYoe <= 2) && (maxYoe === null || maxYoe <= 3);
 
   return {
     minYoe: minYoe !== null ? minYoe : 1,
     maxYoe: maxYoe !== null ? maxYoe : 2,
     raw: cleanTag,
     isSenior,
-    isSuitable
+    isSuitable,
+    reason: !isSuitable ? (isSeniorTitle ? `Title indicates senior: "${jobTitle}"` : `Requires ${cleanTag} (exceeds 0-2 YOE profile)`) : undefined
   };
 }
 
@@ -467,11 +528,29 @@ export function extractJobRequirements(bodyText = "", html = "", jobUrl = "", jo
  * }>}
  */
 export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existingBrowser = null) {
+  // Fast Title Check: Abort early if job title itself is senior or internship
+  const titleParsed = parseExperienceFromText("", jobTitle);
+  if (!titleParsed.isSuitable) {
+    return {
+      verifiedExperience: titleParsed.raw,
+      isSuitable: false,
+      reason: titleParsed.reason || `Title "${jobTitle}" indicates senior or excluded role`,
+      mandatoryRequirements: [],
+      niceToHave: [],
+      mandatoryBullets: [],
+      niceToHaveBullets: [],
+      salary: null,
+      directApplyUrl: null,
+      overview: ""
+    };
+  }
+
   if (!jobUrl || typeof jobUrl !== "string" || !jobUrl.startsWith("http")) {
     const fallbackReqs = extractJobRequirements("", "", jobUrl, jobTitle);
     return {
-      verifiedExperience: "0 - 2 YOE",
-      isSuitable: true,
+      verifiedExperience: titleParsed.raw,
+      isSuitable: false,
+      reason: "Missing or invalid job URL",
       ...fallbackReqs
     };
   }
@@ -505,7 +584,7 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
     });
 
     console.log(`🔎 [Playwright Proofreader] Inspecting: ${jobUrl}`);
-    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 9000 });
+    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 15000 });
     const finalUrl = page.url(); // capture URL after any redirects
 
     // Click "Show more" / "See more" if present (LinkedIn, Greenhouse, Ashby, Lever)
@@ -558,9 +637,9 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
 
     if (!parsed.isSuitable) {
       return {
-        verifiedExperience: `${parsed.minYoe}+ YOE`,
+        verifiedExperience: parsed.raw,
         isSuitable: false,
-        reason: `Source page requires ${parsed.raw} (exceeds 0-2 YOE profile)`,
+        reason: parsed.reason || `Source page requires ${parsed.raw} (exceeds 0-2 YOE profile)`,
         mandatoryRequirements: [],
         niceToHave: [],
         mandatoryBullets: [],
@@ -630,8 +709,9 @@ export async function proofreadJobWithPlaywright(jobUrl, jobTitle = "", existing
     console.warn(`⚠️ [Playwright Proofreader Warning] Could not inspect ${jobUrl}:`, err.message);
     const fallbackReqs = extractJobRequirements("", "", jobUrl, jobTitle);
     return {
-      verifiedExperience: "0 - 2 YOE",
-      isSuitable: true,
+      verifiedExperience: "Unverified",
+      isSuitable: false,
+      reason: `Could not verify source page requirements: ${err.message}`,
       ...fallbackReqs
     };
   } finally {
