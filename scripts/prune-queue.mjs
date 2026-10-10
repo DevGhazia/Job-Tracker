@@ -130,10 +130,10 @@ export async function pruneExpiredQueuedJobs(customDb = db, userId = DEFAULT_USE
     const roleLower = role.toLowerCase();
     const isIntern = /\b(intern|internship|trainee|apprentice|co-?op)\b/i.test(roleLower);
     const isSenior = /\b(senior|sr\.?|staff|principal|lead|architect|director|manager|avp|vp)\b/i.test(roleLower) ||
-                     /(?:engineer|developer|sde|swe|mts|specialist|craftsperson)\s*(?:[2-9]|ii|iii|iv|v|vi)\b/i.test(roleLower) ||
+                     /(?:engineer|developer|sde|swe|mts|specialist|craftsperson)\s*(?:[2-9]|ii|iii|iv|v|vi)\b(?!\s*(?:[-–—to]\s*\d+|\d+\s*(?:years?|yrs?|yoe)|\+?\s*(?:years?|yrs?|yoe)))/i.test(roleLower) ||
                      /\b(ii|iii|iv|v|vi)\b/i.test(roleLower);
-    const isHighExp = /\b(?:[2-9]|\d{2,})\s*[-–—to]\s*(?:[4-9]|\d{2,})\s*(?:years?|yrs?|yoe)?\b/i.test(roleLower) ||
-                      /\b(?:[3-9]|\d{2,})\s*\+?\s*(?:years?|yrs?|yoe)?\b/i.test(roleLower);
+    const isHighExp = /\b([3-9]|\d{2,})\s*[-–—to]\s*\d+\s*(?:years?|yrs?|yoe)?\b/i.test(roleLower) ||
+                      /\b([3-9]|\d{2,})\s*\+?\s*(?:years?|yrs?|yoe)?\b/i.test(roleLower);
 
     if (isIntern || isSenior || isHighExp) {
       const reason = isIntern ? "Internship / Trainee role strictly excluded" : (isSenior ? "Senior / Level II+ role strictly excluded" : "Out of 0-2 YOE range");

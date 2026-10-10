@@ -30,15 +30,13 @@ const TARGET_TECH_KEYWORDS = [
   "associate software engineer", "associate frontend", "entry level frontend"
 ];
 
-// TITLE EXCLUSIONS: Seniority, High YOE, internships, purely non-frontend titles
+// TITLE EXCLUSIONS: Seniority, High YOE (> 2 YOE), internships, purely non-frontend titles
 const TITLE_EXCLUSIONS = [
   "senior", "sr.", "sr ", "staff", "principal", "lead", "manager", "director", "architect",
   "sde 2", "sde-2", "sde 3", "sde-3", "sde ii", "sde iii", "sde-ii", "sde-iii", "team lead", "head of",
   "intern", "internship", "trainee", "apprentice", "co-op", "coop",
   "specialist 3", "specialist iii", "specialist 2", "specialist ii", "craftsperson iii", "craftsperson ii",
   "3+", "4+", "5+", "6+", "7+", "8+", "3-5", "4-6", "5-7", "3 to 5", "4 to 6",
-  "2-4", "2-5", "2-6", "2-7", "2 to 4", "2 to 5", "2 to 6", "2 to 7",
-  "2–4", "2–5", "2–6", "2–7",
   "3-6", "3-7", "3-8", "3 to 7", "3 to 8",
   "4-8", "5-10", "6-8", "5-8", "6-10",
   "backend", "back-end", "back end", "python developer", "java developer", "golang", "go developer",
@@ -231,16 +229,14 @@ export function extractExperience(text = "") {
   const niceToHaveIdx = lower.search(/(?:nice to have|good to have|bonus points|preferred qualifications|optional|plus points|not mandatory|pluses)/i);
   const requiredSection = niceToHaveIdx !== -1 ? lower.slice(0, niceToHaveIdx) : lower;
 
-  // High Experience Rejection Patterns (> 2 years or wide ranges starting from 2)
+  // High Experience Rejection Patterns (Strictly > 2 YOE: 3+, 3-5, 4+, 5-10, etc.)
   const highExpPatterns = [
     /\b([3-9]|\d{2,})\s*(?:\+\s*(?:years?|yrs?|yoe)\b|(?:years?|yrs?|yoe)\s*(?:\+|or more|and above))/i,
     /(?:[3-9]|\d{2,})\s*\+\s*(?:years?|yrs?|yoe)/i,
     /(?:[3-9]|\d{2,})\s*(?:-|–|—|to)\s*\d+\s*(?:years?|yrs?|yoe)/i,
-    /(?:[2-9])\s*(?:-|–|—|to)\s*(?:[4-9]|\d{2,})\s*(?:years?|yrs?|yoe)/i, // 2-4, 2-5, 2-6 yrs!
     /(?:min|minimum|at least|over|more than|around|approx|about)\s+(?:of\s+)?(?:[3-9]|\d{2,})\s*(?:\+)?\s*(?:years?|yrs?|yoe)/i,
     /(?:[3-9]|\d{2,})\s*(?:\+)?\s*(?:years?|yrs?|yoe)\s+(?:of\s+)?(?:hands[\s-]on|relevant|professional|industry|commercial|proven|solid|deep|practical)?\s*(?:work\s+)?experience/i,
-    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–—]\s*(?:min|at least)?\s*(?:[3-9]|\d{2,})/i,
-    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–—]\s*(?:[2-9])\s*(?:-|–|—|to)\s*(?:[4-9]|\d{2,})/i
+    /(?:experience|yoe|exp)\s*(?:required|needed)?\s*[:\-–—]\s*(?:min|at least)?\s*(?:[3-9]|\d{2,})/i
   ];
 
   for (const pattern of highExpPatterns) {
@@ -250,11 +246,11 @@ export function extractExperience(text = "") {
     }
   }
 
-  // 2. Target 0-2 YOE Matching (Handles "min 2 years hands on experience with react", "0-2 years", "fresher", etc.)
+  // 2. Target Experience Matching (Handles "at least 2 years", "2-5 years", "0-2 years", "fresher", etc.)
   // Intern is strictly excluded.
   const targetExpPatterns = [
     /(?:min|minimum|at least|around|approx|about)\s+(?:of\s+)?([0-2])\s*(?:\+)?\s*(?:years?|yrs?|yoe)/i,
-    /(?:0\s*-\s*1|0\s*-\s*2|1\s*-\s*2|0\s*to\s*2|1\s*to\s*2|1\s*-\s*3|2\s*-\s*3)\s*(?:years?|yrs?|yoe)/i,
+    /(?:0\s*[-–—to]\s*1|0\s*[-–—to]\s*2|1\s*[-–—to]\s*2|1\s*[-–—to]\s*3|2\s*[-–—to]\s*3|2\s*[-–—to]\s*4|2\s*[-–—to]\s*5|2\s*[-–—to]\s*6)\s*(?:years?|yrs?|yoe)/i,
     /([0-2])\s*(?:\+)?\s*(?:years?|yrs?|yoe)\s*(?:of)?\s*(?:hands[\s-]on|relevant|professional|industry|practical|proven)?\s*(?:work\s+)?experience/i,
     /(?:fresher|entry[\s-]level|junior|graduate|associate)\s*(?:frontend|developer|engineer|software)?/i
   ];
@@ -287,20 +283,14 @@ export function isValidTitle(title = "") {
     if (norm.includes(ex) || title.toLowerCase().includes(ex)) return false;
   }
 
-  // 3. Reject level II/III/IV or 2/3/4/5 suffixes or Roman numerals
-  if (/(?:engineer|developer|sde|swe|member of technical staff|mts|specialist|craftsperson|consultant)\s*(?:[2-9]|ii|iii|iv|v|vi)\b/i.test(norm)) {
+  // 3. Reject level II/III/IV or 2/3/4/5 suffixes or Roman numerals (without flagging experience numbers like "2-5 Years")
+  if (/(?:engineer|developer|sde|swe|member of technical staff|mts|specialist|craftsperson|consultant)\s*(?:[2-9]|ii|iii|iv|v|vi)\b(?!\s*(?:[-–—to]\s*\d+|\d+\s*(?:years?|yrs?|yoe)|\+?\s*(?:years?|yrs?|yoe)))/i.test(norm)) {
     return false;
   }
   if (/\b(ii|iii|iv|v|vi)\b/i.test(norm)) {
     return false;
   }
   if (/\b(?:level|lvl|l)[-\s]*[2-9]\b/i.test(norm)) {
-    return false;
-  }
-
-  // 4. Reject experience in titles (> 2 YOE or ranges like 2-5, 3+, etc.)
-  if (/\b(?:[2-9]|\d{2,})\s*[-–—to]\s*(?:[4-9]|\d{2,})\s*(?:years?|yrs?|yoe)?\b/i.test(norm) ||
-      /\b(?:[3-9]|\d{2,})\s*\+?\s*(?:years?|yrs?|yoe)?\b/i.test(norm)) {
     return false;
   }
 

@@ -28,7 +28,7 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
 
   // 1. Title Checks
   const isSeniorTitle = /\b(senior|sr\.?|staff|principal|lead|architect|director|manager|avp|vp|vice president|head of)\b/i.test(cleanTitle) ||
-                        /(?:engineer|developer|sde|swe|mts|specialist|craftsperson|consultant)\s*(?:[2-9]|ii|iii|iv|v|vi)\b/i.test(cleanTitle) ||
+                        /(?:engineer|developer|sde|swe|mts|specialist|craftsperson|consultant)\s*(?:[2-9]|ii|iii|iv|v|vi)\b(?!\s*(?:[-–—to]\s*\d+|\d+\s*(?:years?|yrs?|yoe)|\+?\s*(?:years?|yrs?|yoe)))/i.test(cleanTitle) ||
                         /\b(ii|iii|iv|v|vi)\b/i.test(cleanTitle) ||
                         /\b(?:level|lvl|l)[-\s]*[2-9]\b/i.test(cleanTitle);
 
@@ -45,22 +45,9 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     };
   }
 
-  // Check experience tags in title: e.g. "2–5 Years", "3+ YOE", "4-6 yrs"
-  const titleExpMatch = cleanTitle.match(/\b([2-9]|\d{2,})\s*[-–—to]\s*([4-9]|\d{2,})\s*(?:years?|yrs?|yoe)?\b/i) ||
-                        cleanTitle.match(/\b([3-9]|\d{2,})\s*\+\s*(?:years?|yrs?|yoe)?\b/i);
-  if (titleExpMatch) {
-    return {
-      minYoe: parseInt(titleExpMatch[1], 10),
-      maxYoe: titleExpMatch[2] ? parseInt(titleExpMatch[2], 10) : parseInt(titleExpMatch[1], 10) + 2,
-      raw: titleExpMatch[0],
-      isSenior: true,
-      isSuitable: false,
-      reason: `Title specifies >2 YOE: "${titleExpMatch[0]}"`
-    };
-  }
-
-  // 2. Body Text Checks
-  const clean = normalizeNumberWords(text).replace(/\s+/g, " ");
+  // Combine title and body so experience ranges anywhere in title or body are parsed
+  const combined = (jobTitle ? jobTitle + " \n " : "") + (text || "");
+  const clean = normalizeNumberWords(combined).replace(/\s+/g, " ");
 
   // Body intern check
   if (/\b(?:role|position|job|hiring|seeking|looking for|title)\s+(?:an?|for)?\s*(?:intern|internship|trainee|apprentice)\b/i.test(clean) ||
@@ -141,14 +128,11 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     cleanTag = `${minYoe} yrs`;
   }
 
-  // Strict suitability decision
-  // Suitable ONLY if:
-  // - Not a senior title
-  // - minYoe <= 2 (or null)
-  // - maxYoe <= 3 (or null)
-  // i.e., 0-1, 0-2, 1-2, 1-3, 0-3, or 2 yrs. Anything like 2-5, 2-4, 3+, 3-5, 4+, 5-10 is REJECTED.
-  const isSenior = isSeniorTitle || (minYoe !== null && minYoe >= 3) || (maxYoe !== null && maxYoe >= 4);
-  const isSuitable = !isSenior && (minYoe === null || minYoe <= 2) && (maxYoe === null || maxYoe <= 3);
+  // User rule: "anything that requires at least 2 or less than 2 is good to go, other sould be rejected"
+  // - minYoe <= 2 (or null) -> good to go! (e.g. 0-2 yrs, 1-2 yrs, 2 yrs, 2-4 yrs, 2-5 yrs, 2-6 yrs)
+  // - minYoe >= 3 (e.g. 3+, 3-5, 3-7, 4+, 5-10, 6-8) -> reject!
+  const isSenior = isSeniorTitle || (minYoe !== null && minYoe >= 3);
+  const isSuitable = !isSenior && (minYoe === null || minYoe <= 2);
 
   return {
     minYoe: minYoe !== null ? minYoe : 1,
@@ -156,7 +140,7 @@ export function parseExperienceFromText(text = "", jobTitle = "") {
     raw: cleanTag,
     isSenior,
     isSuitable,
-    reason: !isSuitable ? (isSeniorTitle ? `Title indicates senior: "${jobTitle}"` : `Requires ${cleanTag} (exceeds 0-2 YOE profile)`) : undefined
+    reason: !isSuitable ? (isSeniorTitle ? `Title indicates senior: "${jobTitle}"` : `Requires ${cleanTag} (minimum ${minYoe} YOE exceeds 2 YOE threshold)`) : undefined
   };
 }
 
