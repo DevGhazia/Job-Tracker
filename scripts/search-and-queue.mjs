@@ -32,6 +32,10 @@ const DEFAULT_USER_ID = "mTRDrxLoFaPjAKU1TOvqxgMt21o2";
 
 async function runSearchAndQueue() {
   const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
+  if (profile.jobSearchActive === false || profile.automation?.enabled === false) {
+    console.log("🛑 Job search is paused (jobSearchActive: false). Exiting.");
+    return;
+  }
   
   const args = process.argv.slice(2);
   const isFreeOnly = args.includes("--free-only") || process.env.SEARCH_MODE === "free";

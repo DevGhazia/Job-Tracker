@@ -360,6 +360,13 @@ export async function sendDmDiscordNotification(lead) {
   };
 
   try {
+    const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
+    if (profile.jobSearchActive === false || profile.automation?.discordNotifications === false) {
+      return;
+    }
+  } catch {}
+
+  try {
     await fetch(DISCORD_DM_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -373,6 +380,14 @@ export async function sendDmDiscordNotification(lead) {
 
 // 7. Main Runner (Persistent Queue: NO AUTO-DELETION of existing leads)
 export async function runDmHunter() {
+  try {
+    const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
+    if (profile.jobSearchActive === false || profile.automation?.enabled === false) {
+      console.log("🛑 Founder outreach is paused (jobSearchActive: false). Exiting.");
+      return;
+    }
+  } catch {}
+
   console.log("🔍 Scanning for Funded Startups, Founder Hiring Posts & HR Contacts in India...\n");
 
   const leadsRef = db.collection("users").doc(DEFAULT_USER_ID).collection("dm_leads");

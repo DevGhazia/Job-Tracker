@@ -1,4 +1,10 @@
 {
+  "jobSearchActive": false,
+  "automation": {
+    "enabled": false,
+    "discordNotifications": false,
+    "autoQueue": false
+  },
   "personal": {
     "firstName": "Vivek",
     "lastName": "Kumar",

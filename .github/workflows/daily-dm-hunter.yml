@@ -1,9 +1,9 @@
 name: Daily Founder & HR Outreach Discovery
 
 on:
-  schedule:
-    # Runs 1 time daily at 9:47 AM IST (04:17 UTC)
-    - cron: '17 4 * * *'
+  # schedule:
+  #   # Runs 1 time daily at 9:47 AM IST (04:17 UTC)
+  #   - cron: '17 4 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 jobs:

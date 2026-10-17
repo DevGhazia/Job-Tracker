@@ -68,6 +68,13 @@ export async function sendTelegramNotification(message) {
 }
 
 export async function sendDiscordNotification(payload) {
+  try {
+    const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
+    if (profile.jobSearchActive === false || profile.automation?.discordNotifications === false) {
+      return;
+    }
+  } catch {}
+
   const webhookUrl = getEnvVar("DISCORD_JOBS_WEBHOOK_URL") || getEnvVar("DISCORD_WEBHOOK_URL");
   if (!webhookUrl) return;
 
@@ -135,6 +142,13 @@ export async function sendDiscordNotification(payload) {
 }
 
 export async function sendJobAlert(payload) {
+  try {
+    const profile = JSON.parse(readFileSync(resolve(rootDir, "candidate_profile.json"), "utf-8"));
+    if (profile.jobSearchActive === false || profile.automation?.enabled === false) {
+      return;
+    }
+  } catch {}
+
   const textMsg = typeof payload === "string" ? payload : payload.text || "⚡ New jobs queued in Job Tracker!";
   await Promise.allSettled([
     sendWhatsAppNotification(textMsg),
